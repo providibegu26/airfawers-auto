@@ -1,0 +1,186 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  motDePasse        String
+  motDePasseDefini  Boolean  @default(false)
+  role              String   @default("chauffeur")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+  chauffeur         Chauffeur?
+}
+
+model Chauffeur {
+  id          Int      @id @default(autoincrement())
+  nom         String
+  postnom     String
+  prenom      String
+  sexe        String
+  telephone   String
+  dateEmbauche DateTime @default(now())
+  statut      String   @default("Non attribué")
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicules   Vehicule[]
+  pannes      Panne[]
+  confirmationsRecuperation ConfirmationRecuperationCarburant[]
+  passwordChangeRequests PasswordChangeRequest[]
+  saisiesKilometrage SaisieKilometrageChauffeur[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
+
+model Vehicule {
+  id              Int      @id @default(autoincrement())
+  immatriculation String   @unique
+  marque          String
+  modele          String
+  annee           Int      @default(2024)
+  categorie       String   @default("LIGHT")
+  kilometrage     Int      @default(0)
+  weeklyKm        Int      @default(500) // Kilométrage hebdomadaire moyen
+  statut          String   @default("disponible")
+  dateAjout       DateTime @default(now())
+  chauffeurId     Int?
+  chauffeur       Chauffeur? @relation(fields: [chauffeurId], references: [id])
+  historiqueEntretiens HistoriqueEntretien[]
+  attributionsCarburant AttributionCarburant[]
+  historiqueConsommation HistoriqueConsommation[]
+  confirmationsRecuperation ConfirmationRecuperationCarburant[]
+  pannes          Panne[]
+  saisiesKilometrageChauffeur SaisieKilometrageChauffeur[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+}
+
+model FenetreMiseAJourKilometrage {
+  id          Int       @id @default(autoincrement())
+  semaine     String    @unique // Format ISO: "2026-W13"
+  ouverte     Boolean   @default(false)
+  ouverteLe   DateTime?
+  fermeeLe    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SaisieKilometrageChauffeur {
+  id               Int       @id @default(autoincrement())
+  vehiculeId       Int
+  vehicule         Vehicule  @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  chauffeurId      Int
+  chauffeur        Chauffeur @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  semaine          String
+  kilometrageAvant Int
+  kilometrageApres Int
+  kmParcourus      Int
+  dateSaisie       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+
+  @@unique([vehiculeId, semaine])
+}
+
+model Panne {
+  id              Int       @id @default(autoincrement())
+  vehiculeId      Int
+  vehicule        Vehicule  @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  chauffeurId     Int
+  chauffeur       Chauffeur @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  type            String    // moteur, pneu, batterie, electrique, freinage, autre
+  description     String    // Ce que le chauffeur observe
+  niveauGravite   String    // utilisable, limite, immobilise
+  latitude        Float?
+  longitude       Float?
+  localisation    String?   // Adresse ou repère lisible
+  statut          String    @default("en_attente") // en_attente, en_cours, resolue
+  notesAdmin      String?
+  dateSignalement DateTime  @default(now())
+  dateResolution  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model HistoriqueEntretien {
+  id              Int      @id @default(autoincrement())
+  vehiculeId      Int
+  vehicule        Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  type            String   // vidange, bougies, freins
+  kilometrage     Int      // Kilométrage au moment de l'entretien
+  description     String?
+  dateEffectuee   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+}
+
+// Nouveaux modèles pour la gestion du carburant
+model AttributionCarburant {
+  id          Int      @id @default(autoincrement())
+  vehiculeId  Int
+  vehicule    Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  quantite    Float    // Litres attribués
+  estimation  Float    // Estimation calculée
+  marge       Float    // Marge -10%/+10%
+  cout        Float    // Coût total en FC
+  date        DateTime @default(now())
+  adminId     Int?     // ID de l'admin qui a fait l'attribution
+  notes       String?  // Commentaires admin
+  confirmationsRecuperation ConfirmationRecuperationCarburant[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
+
+model HistoriqueConsommation {
+  id          Int      @id @default(autoincrement())
+  vehiculeId  Int
+  vehicule    Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  semaine     String   // Format: "2026-W13"
+  kmParcourus Int      // Kilométrage parcouru sur la semaine
+  consommation Float   // Consommation calculée en litres
+  cout        Float    // Coût total en FC
+  kilometrageAvant Int?
+  kilometrageApres Int?
+  source      String?  // "admin" | "chauffeur"
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  @@unique([vehiculeId, semaine]) // Dernière saisie de la semaine (upsert)
+}
+
+// Nouveau modèle pour les confirmations de récupération de carburant
+model ConfirmationRecuperationCarburant {
+  id                    Int      @id @default(autoincrement())
+  vehiculeId            Int
+  vehicule              Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  attributionCarburantId Int
+  attributionCarburant  AttributionCarburant @relation(fields: [attributionCarburantId], references: [id], onDelete: Cascade)
+  chauffeurId           Int
+  chauffeur             Chauffeur @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  quantite              Float    // Quantité confirmée récupérée
+  dateConfirmation      DateTime @default(now())
+  notes                 String?  // Commentaires du chauffeur
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now())
+}
+
+// Modèle pour les demandes de changement de mot de passe
+model PasswordChangeRequest {
+  id          Int      @id @default(autoincrement())
+  chauffeurId Int
+  chauffeur   Chauffeur @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  code        String   // Code temporaire à 6 chiffres
+  expiresAt   DateTime // Date d'expiration du code
+  used        Boolean  @default(false) // Si le code a été utilisé
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}

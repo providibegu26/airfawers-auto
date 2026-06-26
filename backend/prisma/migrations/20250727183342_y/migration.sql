@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Chauffeur" ALTER COLUMN "postnom" DROP DEFAULT,
+ALTER COLUMN "sexe" DROP DEFAULT;

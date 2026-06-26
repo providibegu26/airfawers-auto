@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Vehicule" ADD COLUMN     "weeklyKm" INTEGER NOT NULL DEFAULT 500;

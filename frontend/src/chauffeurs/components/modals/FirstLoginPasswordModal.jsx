@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaKey, FaEye, FaEyeSlash, FaShieldAlt } from "react-icons/fa";
-import Modal from "../../components/UI/Modal";
-import Button from "../../components/UI/Button";
+import Modal from "../../../components/UI/Modal";
+import Button from "../../../components/UI/Button";
 import { apiPath } from "@/config/api";
 
 const inputClass =

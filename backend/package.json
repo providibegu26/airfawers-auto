@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js",
-    "start": "prisma migrate deploy && node server.js",
+    "start": "node server.js",
+    "migrate:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "create-test-chauffeur": "node scripts/createTestChauffeur.js"
   },

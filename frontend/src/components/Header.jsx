@@ -15,7 +15,10 @@ const Header = ({ onMenuClick, userRole = "admin" }) => {
     userRole === "admin" ? "/admin/profile-admin" : "/chauffeur/profile";
 
   useEffect(() => {
-    const updateCount = () => setUnreadCount(notificationService.getUnreadCount());
+    const updateCount = async () => {
+      const count = await notificationService.refreshUnreadCount();
+      setUnreadCount(count);
+    };
     updateCount();
     const interval = setInterval(updateCount, 30000);
     return () => clearInterval(interval);

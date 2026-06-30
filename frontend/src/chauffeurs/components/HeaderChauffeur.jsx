@@ -24,8 +24,9 @@ const HeaderChauffeur = ({ onMenuClick, showMenuButton = true }) => {
   }, []);
 
   useEffect(() => {
-    const updateUnreadCount = () => {
-      setUnreadCount(chauffeurNotificationService.getUnreadCount());
+    const updateUnreadCount = async () => {
+      const count = await chauffeurNotificationService.refreshUnreadCount();
+      setUnreadCount(count);
     };
     updateUnreadCount();
     const interval = setInterval(updateUnreadCount, 30000);

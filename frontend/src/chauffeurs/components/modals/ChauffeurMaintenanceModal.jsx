@@ -5,6 +5,11 @@ import ModalCard from "../../../components/UI/ModalCard";
 import Button from "../../../components/UI/Button";
 import StatusBadge from "../../../components/UI/StatusBadge";
 import { apiPath } from "@/config/api";
+import {
+  getMaintenanceScheduleForVehicle,
+  getClosestMaintenance,
+  formatMaintenanceCountdownLong,
+} from "../../../services/maintenanceService";
 
 const urgencyVariant = (days) => {
   if (days < 0 || days <= 7) return "danger";
@@ -53,28 +58,10 @@ const ChauffeurMaintenanceModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const getMaintenanceData = (v) => {
-    const thresholds = {
-      HEAVY: { vidange: 8000, categorie_b: 16000, categorie_c: 24000 },
-      LIGHT: { vidange: 5000, categorie_b: 10000, categorie_c: 15000 },
-    };
-    const category = thresholds[v.categorie] ? v.categorie : "LIGHT";
-    const t = thresholds[category];
-    const currentKm = v.kilometrage || 0;
-    const weeklyKm = v.weeklyKm || 500;
-
-    return [
-      { name: "Catégorie A", key: "vidange", threshold: t.vidange },
-      { name: "Catégorie B", key: "categorie_b", threshold: t.categorie_b },
-      { name: "Catégorie C", key: "categorie_c", threshold: t.categorie_c },
-    ].map(({ name, threshold }) => {
-      const remainingKm = threshold - (currentKm % threshold);
-      const remainingDays = Math.ceil((remainingKm / weeklyKm) * 7);
-      return { name, remainingDays };
-    });
-  };
+  const getMaintenanceData = (v) => getMaintenanceScheduleForVehicle(v);
 
   const maintenanceData = vehicle ? getMaintenanceData(vehicle) : [];
+  const closest = vehicle ? getClosestMaintenance(vehicle) : null;
 
   return (
     <Modal
@@ -126,34 +113,67 @@ const ChauffeurMaintenanceModal = ({ isOpen, onClose }) => {
           </div>
 
           <div className="space-y-3">
+            {closest && (
+              <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
+                  Prochain entretien (le plus proche)
+                </p>
+                <p className="mt-1 text-lg font-bold text-amber-950">
+                  {closest.typeLabel}
+                </p>
+                <p className="text-sm font-medium text-amber-800">
+                  {formatMaintenanceCountdownLong(closest.daysRemaining)}
+                </p>
+                <p className="mt-1 text-xs text-amber-700">
+                  {closest.maintenanceDate.toLocaleDateString("fr-FR", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+            )}
+
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Échéances
+              Toutes les échéances
             </p>
-            {maintenanceData.map((m) => (
-              <ModalCard key={m.name}>
+            {maintenanceData.map((m) => {
+              const isClosest = closest?.type === m.type;
+              return (
+              <ModalCard
+                key={m.type}
+                className={isClosest ? "ring-2 ring-amber-300" : ""}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-slate-900">
-                    {m.name}
+                    {m.typeLabel}
+                    {isClosest && (
+                      <span className="ml-2 text-xs font-normal text-amber-600">
+                        (le plus proche)
+                      </span>
+                    )}
                   </span>
                   <StatusBadge
-                    variant={urgencyVariant(m.remainingDays)}
-                    label={urgencyLabel(m.remainingDays)}
+                    variant={urgencyVariant(m.daysRemaining)}
+                    label={urgencyLabel(m.daysRemaining)}
                   />
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
                   Jours restants :{" "}
                   <span
                     className={`font-semibold tabular-nums ${
-                      m.remainingDays <= 7 ? "text-red-600" : "text-slate-700"
+                      m.daysRemaining <= 7 ? "text-red-600" : "text-slate-700"
                     }`}
                   >
-                    {m.remainingDays < 0
-                      ? `${Math.abs(m.remainingDays)} jour(s) de retard`
-                      : `${m.remainingDays} jour(s)`}
+                    {m.daysRemaining < 0
+                      ? `${Math.abs(m.daysRemaining)} jour(s) de retard`
+                      : `${m.daysRemaining} jour(s)`}
                   </span>
                 </p>
               </ModalCard>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}

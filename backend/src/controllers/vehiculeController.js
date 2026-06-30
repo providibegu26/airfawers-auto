@@ -1,4 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
+const {
+  notifyVehicleAssigned,
+} = require('../services/notificationEmitter');
 const prisma = new PrismaClient();
 
 // Créer un véhicule
@@ -256,6 +259,9 @@ async function assignDriver(req, res) {
     }
 
     console.log(' Chauffeur assigné:', vehicule);
+    if (chauffeurId) {
+      await notifyVehicleAssigned(vehicule, parseInt(chauffeurId));
+    }
     res.json({ 
       message: chauffeurId ? "Chauffeur assigné avec succès" : "Chauffeur retiré avec succès", 
       vehicule 

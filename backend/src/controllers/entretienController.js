@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { notifyMaintenanceRecorded } = require('../services/notificationEmitter');
 const prisma = new PrismaClient();
 
 // Valider un entretien et le sauvegarder en base
@@ -10,7 +11,8 @@ async function validateMaintenance(req, res) {
 
     // Vérifier que le véhicule existe
     const vehicule = await prisma.vehicule.findUnique({
-      where: { id: parseInt(vehiculeId) }
+      where: { id: parseInt(vehiculeId) },
+      include: { chauffeur: true },
     });
 
     if (!vehicule) {
@@ -38,6 +40,8 @@ async function validateMaintenance(req, res) {
     });
 
     console.log(' Entretien sauvegardé:', entretien);
+
+    await notifyMaintenanceRecorded(vehicule, type);
 
     // Recalculer les estimations pour ce véhicule
     console.log(' Recalcul des estimations après validation...');

@@ -1,4 +1,9 @@
 const mileageService = require('../services/mileageService');
+const prisma = require('../config/prisma');
+const {
+  notifyMileageWindowOpened,
+  notifyMileageUpdated,
+} = require('../services/notificationEmitter');
 
 async function getFenetre(req, res) {
   try {
@@ -13,6 +18,18 @@ async function getFenetre(req, res) {
 async function ouvrirFenetre(req, res) {
   try {
     const result = await mileageService.openFenetre();
+
+    const chauffeursAvecVehicule = await prisma.chauffeur.findMany({
+      where: { vehicules: { some: {} } },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      chauffeursAvecVehicule.map((c) =>
+        notifyMileageWindowOpened(c.id, result.fenetre?.semaine)
+      )
+    );
+
     res.json({
       message: 'Autorisation de saisie kilométrage activée pour la semaine en cours',
       ...result,
@@ -70,6 +87,13 @@ async function submitChauffeurMileage(req, res) {
       source: 'chauffeur',
       chauffeurId,
     });
+
+    const chauffeur = await prisma.chauffeur.findUnique({
+      where: { id: chauffeurId },
+      select: { id: true, nom: true, prenom: true },
+    });
+
+    await notifyMileageUpdated(status.vehicule, chauffeur, Number(newMileage));
 
     res.json({
       success: true,

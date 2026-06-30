@@ -9,6 +9,7 @@ import FuelModal from "./modals/FuelModal";
 import BreakdownModal from "./modals/BreakdownModal";
 import MileageChauffeurModal from "./modals/MileageChauffeurModal";
 import FirstLoginPasswordModal from "./modals/FirstLoginPasswordModal";
+import ChauffeurNotificationInitializer from "./ChauffeurNotificationInitializer";
 import { apiPath } from "@/config/api";
 
 const ChauffeurLayout = () => {
@@ -53,6 +54,7 @@ const ChauffeurLayout = () => {
 
   return (
     <div className="flex h-screen bg-slate-50">
+      <ChauffeurNotificationInitializer />
       {sidebarOpen && (
         <button
           type="button"

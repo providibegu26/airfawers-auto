@@ -1,5 +1,9 @@
 const prisma = require('../config/prisma');
 const {
+	notifyFuelAssigned,
+	notifyFuelCollected,
+} = require('../services/notificationEmitter');
+const {
 	FUEL_PRICES_FC,
 	FUEL_LABELS,
 	getPrixLitre,
@@ -84,6 +88,7 @@ async function attribuerCarburant(req, res) {
 		console.log(`🚗 Attribution carburant créée: ${quantite}L pour véhicule ${vehicule.immatriculation}`);
 		if (vehicule.chauffeur) {
 			console.log(`👤 Chauffeur notifié: ${vehicule.chauffeur.prenom} ${vehicule.chauffeur.nom}`);
+			await notifyFuelAssigned(vehicule, vehicule.chauffeur, attribution);
 		}
 
 		return res.status(201).json({ 
@@ -252,6 +257,12 @@ async function confirmerRecuperationCarburant(req, res) {
 		});
 
 		console.log(`✅ Confirmation carburant: ${quantite}L confirmés par ${confirmation.chauffeur.prenom} ${confirmation.chauffeur.nom}`);
+
+		await notifyFuelCollected(
+			confirmation,
+			confirmation.vehicule,
+			confirmation.chauffeur
+		);
 
 		return res.status(201).json({
 			message: 'Récupération confirmée',

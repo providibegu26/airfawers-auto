@@ -358,4 +358,73 @@ export const generateCalendarData = (vehicles, targetMonth = null, targetYear = 
   });
   
   return Object.values(calendarData).sort((a, b) => new Date(a.date) - new Date(b.date));
-}; 
+};
+
+const MAINTENANCE_TYPE_LABELS = {
+  vidange: "Catégorie A",
+  categorie_b: "Catégorie B",
+  categorie_c: "Catégorie C",
+};
+
+const MAINTENANCE_TYPES = ["vidange", "categorie_b", "categorie_c"];
+
+/**
+ * Échéances d'entretien pour un véhicule (API ou calcul local aligné admin).
+ */
+export function getMaintenanceScheduleForVehicle(vehicle) {
+  if (!vehicle) return [];
+
+  const category =
+    (vehicle.categorie || "LIGHT").toUpperCase() === "HEAVY" ? "HEAVY" : "LIGHT";
+  const thresholds = maintenanceThresholds[category];
+  const currentKm = vehicle.kilometrage ?? vehicle.currentMileage ?? 0;
+  const weeklyKm = vehicle.weeklyKm || 500;
+
+  return MAINTENANCE_TYPES.map((type) => {
+    let daysRemaining = vehicle[`${type}DaysRemaining`];
+
+    if (daysRemaining === undefined || daysRemaining === null) {
+      const threshold = thresholds[type];
+      const remainingKm = threshold - (currentKm % threshold);
+      daysRemaining = Math.ceil((remainingKm / weeklyKm) * 7);
+    }
+
+    const maintenanceDate = new Date();
+    maintenanceDate.setDate(maintenanceDate.getDate() + daysRemaining);
+
+    return {
+      type,
+      typeLabel: MAINTENANCE_TYPE_LABELS[type],
+      daysRemaining,
+      maintenanceDate,
+      isOverdue: daysRemaining < 0,
+      isUrgent: daysRemaining >= 0 && daysRemaining <= 7,
+    };
+  });
+}
+
+/** Entretien le plus proche (nombre de jours minimal). */
+export function getClosestMaintenance(vehicle) {
+  const schedule = getMaintenanceScheduleForVehicle(vehicle);
+  if (!schedule.length) return null;
+
+  return schedule.reduce((closest, item) =>
+    item.daysRemaining < closest.daysRemaining ? item : closest
+  );
+}
+
+export function formatMaintenanceCountdown(days) {
+  if (days < 0) return `${Math.abs(days)} j de retard`;
+  if (days === 0) return "Aujourd'hui";
+  if (days === 1) return "1 jour";
+  return `${days} j`;
+}
+
+export function formatMaintenanceCountdownLong(days) {
+  if (days < 0) {
+    return `En retard de ${Math.abs(days)} jour${Math.abs(days) > 1 ? "s" : ""}`;
+  }
+  if (days === 0) return "Prévu aujourd'hui";
+  if (days === 1) return "Dans 1 jour";
+  return `Dans ${days} jours`;
+}

@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const { notifyBreakdownReported } = require('../services/notificationEmitter');
 
 const TYPES_PANNE = ['moteur', 'pneu', 'batterie', 'electrique', 'freinage', 'autre'];
 const NIVEAUX_GRAVITE = ['utilisable', 'limite', 'immobilise'];
@@ -149,6 +150,8 @@ async function createPanne(req, res) {
     });
 
     console.log(`🚨 Panne signalée: véhicule ${vehicule.immatriculation} par chauffeur #${chauffeurId}`);
+
+    await notifyBreakdownReported(panne, vehicule, panne.chauffeur);
 
     return res.status(201).json({
       success: true,

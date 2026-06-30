@@ -58,8 +58,8 @@ const NotificationsChauffeur = () => {
     setServiceStatus(chauffeurNotificationService.getStatus());
   };
 
-  const handleMarkAsRead = (notificationId) => {
-    chauffeurNotificationService.markAsRead(notificationId);
+  const handleMarkAsRead = async (notificationId) => {
+    await chauffeurNotificationService.markAsRead(notificationId);
     setNotifications(chauffeurNotificationService.getNotifications());
   };
 
@@ -68,8 +68,8 @@ const NotificationsChauffeur = () => {
     setNotifications(chauffeurNotificationService.getNotifications());
   };
 
-  const handleClearAll = () => {
-    chauffeurNotificationService.clearAllNotifications();
+  const handleClearAll = async () => {
+    await chauffeurNotificationService.clearAllNotifications();
     setNotifications(chauffeurNotificationService.getNotifications());
   };
 
@@ -220,9 +220,9 @@ const NotificationsChauffeur = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {notifications.map((notification, index) => (
+            {notifications.map((notification) => (
               <div 
-                key={index} 
+                key={notification.id} 
                 className={`p-4 transition-all duration-200 ${getBackgroundColor(notification.type, notification.read, notification.fuelAttributionId)}`}
               >
                 <div className="flex items-start space-x-4">
@@ -283,14 +283,14 @@ const NotificationsChauffeur = () => {
                         <div className="flex items-center space-x-2">
                           {!notification.read && (
                             <button
-                              onClick={() => handleMarkAsRead(index)}
+                              onClick={() => handleMarkAsRead(notification.id)}
                               className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors duration-200"
                             >
                               Marquer comme lu
                             </button>
                           )}
                           <button
-                            onClick={() => handleRemoveNotification(index)}
+                            onClick={() => handleRemoveNotification(notification.id)}
                             className="text-xs text-red-500 hover:text-red-700 transition-colors duration-200"
                             title="Supprimer"
                           >

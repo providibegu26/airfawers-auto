@@ -87,6 +87,14 @@ const { adminMileageRoutes, chauffeurMileageRoutes } = require('./src/routes/mil
 app.use('/api/admin/kilometrage', adminMileageRoutes);
 app.use('/api/chauffeur/kilometrage', chauffeurMileageRoutes);
 
+// Notifications persistées
+const {
+  chauffeurNotificationRoutes,
+  adminNotificationRoutes,
+} = require('./src/routes/notificationRoutes');
+app.use('/api/chauffeur/notifications', chauffeurNotificationRoutes);
+app.use('/api/admin/notifications', adminNotificationRoutes);
+
 // Route test
 app.get("/", (req, res) => {
   res.send("🚀 Backend en ligne !");

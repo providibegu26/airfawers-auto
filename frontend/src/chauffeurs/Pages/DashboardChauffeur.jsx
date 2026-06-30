@@ -14,6 +14,11 @@ import { fetchChauffeurMileageStatus } from "../../services/chauffeurMileageServ
 import {
   fetchChauffeurProfile,
 } from "../../services/chauffeurProfileService";
+import {
+  getClosestMaintenance,
+  formatMaintenanceCountdown,
+  formatMaintenanceCountdownLong,
+} from "../../services/maintenanceService";
 
 const QUICK_ACTIONS = [
   {
@@ -74,23 +79,10 @@ const DashboardChauffeur = () => {
 
   const vehicle = profile?.vehicule;
 
-  const nextMaintenance = useMemo(() => {
-    if (!vehicle) return null;
-    const types = [
-      { key: "vidange", label: "Catégorie A" },
-      { key: "categorie_b", label: "Catégorie B" },
-      { key: "categorie_c", label: "Catégorie C" },
-    ];
-    const items = types
-      .map(({ key, label }) => ({
-        label,
-        days: vehicle[`${key}DaysRemaining`],
-      }))
-      .filter((t) => t.days !== null && t.days !== undefined);
-
-    if (items.length === 0) return null;
-    return items.sort((a, b) => a.days - b.days)[0];
-  }, [vehicle]);
+  const closestMaintenance = useMemo(
+    () => getClosestMaintenance(vehicle),
+    [vehicle]
+  );
 
   const overviewCards = [
     {
@@ -105,9 +97,15 @@ const DashboardChauffeur = () => {
     {
       id: "entretien",
       label: "Prochain entretien",
-      value: nextMaintenance ? `${nextMaintenance.days} j` : "—",
-      sub: nextMaintenance?.label || "Pas de données",
-      gradient: "from-amber-500 to-orange-500",
+      value: closestMaintenance
+        ? formatMaintenanceCountdown(closestMaintenance.daysRemaining)
+        : "—",
+      sub: closestMaintenance
+        ? `${closestMaintenance.typeLabel} · ${formatMaintenanceCountdownLong(closestMaintenance.daysRemaining)}`
+        : "Pas de données",
+      gradient: closestMaintenance?.isOverdue || closestMaintenance?.isUrgent
+        ? "from-rose-500 to-red-600"
+        : "from-amber-500 to-orange-500",
       action: () => openModal("entretien"),
     },
     {
@@ -238,6 +236,42 @@ const DashboardChauffeur = () => {
           </button>
         </div>
       </section>
+
+      {!loading && vehicle && closestMaintenance && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+              <FaTools className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
+                Entretien le plus proche
+              </p>
+              <p className="mt-1 text-lg font-bold text-amber-950">
+                {closestMaintenance.typeLabel}
+              </p>
+              <p className="text-sm text-amber-800">
+                {formatMaintenanceCountdownLong(closestMaintenance.daysRemaining)}
+              </p>
+              <p className="mt-1 text-xs text-amber-700">
+                Date estimée :{" "}
+                {closestMaintenance.maintenanceDate.toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openModal("entretien")}
+              className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+            >
+              Détails
+            </button>
+          </div>
+        </section>
+      )}
 
       {!loading && vehicle && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

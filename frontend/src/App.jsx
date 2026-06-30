@@ -8,9 +8,6 @@ import ChauffeurLayout from "./chauffeurs/components/ChauffeurLayout";
 // Components
 import NotificationInitializer from "./components/NotificationInitializer";
 
-// Test Components
-import TestSidebar from "./test-sidebar";
-
 // Admin Pages
 import Dashboard from "./Pages/Dashboard";
 import VehiclesPage from "./Pages/VehiclesPage";
@@ -45,10 +42,6 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Navigate to="/admin/login" replace />,
-  },
-  {
-    path: "/test-sidebar",
-    element: <TestSidebar />,
   },
   {
     path: "/admin",

@@ -26,6 +26,10 @@ app.use('/api/admin/auth', adminAuthRoutes);
 const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+// Authentification chauffeur (login / mot de passe)
+const authChauffeurRoutes = require('./src/routes/authChauffeurRoutes');
+app.use('/api/auth-chauffeur', authChauffeurRoutes);
+
 // Routes pour les véhicules et entretiens
 const vehicleRoutes = require('./src/routes/vehiculeRoutes');
 app.use('/api/admin/vehicules', vehicleRoutes);

@@ -77,44 +77,21 @@ export const ChauffeursPage = () => {
     page * ITEMS_PER_PAGE
   );
 
-  const handleSaveChauffeur = async (chauffeurData) => {
-    try {
-      const response = await fetch(API_CHAUFFEURS, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(chauffeurData),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setShowAddModal(false);
-        const newChauffeur = {
-          ...data.user,
-          user: { email: data.user.email, motDePasseDefini: false },
-        };
-        setChauffeurs((prev) => [...prev, newChauffeur]);
-        setSuccessData({
-          title: "Chauffeur créé",
-          message: "Le chauffeur a été enregistré dans le système.",
-          details: {
-            Email: data.user.email,
-            "Mot de passe temporaire": data.user.motDePasseTemporaire,
-          },
-        });
-        setShowSuccessModal(true);
-      } else {
-        setSuccessData({
-          title: "Erreur",
-          message: data.error || "Erreur lors de la création",
-        });
-        setShowSuccessModal(true);
-      }
-    } catch {
-      setSuccessData({
-        title: "Erreur réseau",
-        message: "Impossible de créer le chauffeur.",
-      });
-      setShowSuccessModal(true);
-    }
+  const handleChauffeurCreated = (chauffeur) => {
+    setChauffeurs((prev) => [
+      ...prev,
+      {
+        id: chauffeur.id,
+        nom: chauffeur.nom,
+        postnom: chauffeur.postnom,
+        prenom: chauffeur.prenom,
+        telephone: chauffeur.telephone,
+        sexe: chauffeur.sexe,
+        statut: chauffeur.statut,
+        user: { email: chauffeur.email },
+        vehicules: [],
+      },
+    ]);
   };
 
   const handleUpdateChauffeur = (chauffeur) => {
@@ -280,7 +257,7 @@ export const ChauffeursPage = () => {
       {showAddModal && (
         <AddChauffeurModal
           onClose={() => setShowAddModal(false)}
-          onSave={handleSaveChauffeur}
+          onSave={handleChauffeurCreated}
         />
       )}
 

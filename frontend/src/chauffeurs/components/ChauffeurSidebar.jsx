@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import ConfirmationModal from "../../components/UI/ConfirmationModal";
 import {
   FaHome,
   FaCalendarAlt,
@@ -18,9 +19,10 @@ const ChauffeurSidebar = ({
   sidebarOpen,
 }) => {
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const handleLogout = async () => {
-    if (!window.confirm("Êtes-vous sûr de vouloir vous déconnecter ?")) return;
+  const performLogout = async () => {
+    setShowLogoutConfirm(false);
 
     try {
       const { default: chauffeurNotificationService } = await import(
@@ -144,13 +146,24 @@ const ChauffeurSidebar = ({
       <div className="border-t border-slate-100 p-3">
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={() => setShowLogoutConfirm(true)}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-red-600"
         >
           <FaSignOutAlt className="h-4 w-4 shrink-0" />
           Déconnexion
         </button>
       </div>
+
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={performLogout}
+        title="Déconnexion"
+        message="Êtes-vous sûr de vouloir vous déconnecter ?"
+        confirmText="Se déconnecter"
+        cancelText="Annuler"
+        variant="danger"
+      />
     </aside>
   );
 };

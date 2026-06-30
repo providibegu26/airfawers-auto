@@ -31,6 +31,8 @@ const Modal = ({
 }) => {
   const visible = show ?? isOpen;
   const panelRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const titleId = useRef(
     `modal-${Math.random().toString(36).slice(2, 9)}`
   ).current;
@@ -38,22 +40,23 @@ const Modal = ({
   useEffect(() => {
     if (!visible) return undefined;
 
-    const previouslyFocused = document.activeElement;
     const handleKey = (e) => {
-      if (e.key === "Escape" && onClose) onClose();
+      if (e.key === "Escape" && onCloseRef.current) onCloseRef.current();
     };
     document.addEventListener("keydown", handleKey);
     document.body.style.overflow = "hidden";
 
-    const t = setTimeout(() => panelRef.current?.focus(), 0);
-
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = "";
-      clearTimeout(t);
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
     };
-  }, [visible, onClose]);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return undefined;
+    const t = setTimeout(() => panelRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, [visible]);
 
   if (!visible) return null;
 

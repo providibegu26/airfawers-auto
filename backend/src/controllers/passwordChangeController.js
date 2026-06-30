@@ -1,23 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
+const { sendMail } = require('../config/email');
 
 const prisma = new PrismaClient();
-
-// Configuration email (à adapter selon votre setup)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true pour 465, false pour les autres ports
-  auth: {
-    user: process.env.EMAIL_USER || 'airfawersauto@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
 
 // Demander un changement de mot de passe
 async function requestPasswordChange(req, res) {
@@ -72,7 +57,6 @@ async function requestPasswordChange(req, res) {
 
     // Envoyer l'email avec le code
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@airfawers.com',
       to: email,
       subject: 'Code de changement de mot de passe - Airfawers Auto',
       html: `
@@ -101,9 +85,11 @@ async function requestPasswordChange(req, res) {
       `
     };
 
+    let emailSent = false;
     try {
-      await transporter.sendMail(mailOptions);
-      console.log(`📧 Code de changement de mot de passe envoyé à ${email}: ${code}`);
+      await sendMail(mailOptions);
+      emailSent = true;
+      console.log(`📧 Code de changement de mot de passe envoyé à ${email}`);
     } catch (emailError) {
       console.log(`⚠️ Erreur email, code affiché dans la console: ${code}`);
       console.error('Erreur email:', emailError);
@@ -111,7 +97,10 @@ async function requestPasswordChange(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: 'Code de confirmation envoyé par email',
+      message: emailSent
+        ? 'Code de confirmation envoyé par email'
+        : 'Code généré mais l\'email n\'a pas pu être envoyé. Vérifiez la configuration SMTP.',
+      emailSent,
       expiresIn: '15 minutes'
     });
 

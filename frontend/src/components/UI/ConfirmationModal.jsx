@@ -4,6 +4,7 @@ import Button from "./Button";
 
 const ConfirmationModal = ({
   isOpen,
+  show,
   onClose,
   onConfirm,
   title,
@@ -13,7 +14,7 @@ const ConfirmationModal = ({
   variant = "primary",
 }) => (
   <Modal
-    isOpen={isOpen}
+    isOpen={isOpen ?? show}
     onClose={onClose}
     title={title}
     size="sm"

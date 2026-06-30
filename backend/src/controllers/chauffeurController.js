@@ -1,23 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { sendMail } = require('../config/email');
 const prisma = new PrismaClient();
-
-// Configuration email
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER || 'airfawersauto@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
 
 // Créer un nouveau chauffeur (version corrigée selon le schéma Prisma)
 async function createChauffeur(req, res) {
@@ -80,7 +65,6 @@ async function createChauffeur(req, res) {
     
     // Envoyer l'email avec les identifiants
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'airfawersauto@gmail.com',
       to: email,
       subject: 'Vos identifiants de connexion - Airfawers Auto',
       html: `
@@ -111,16 +95,24 @@ async function createChauffeur(req, res) {
       `
     };
     
+    let emailSent = false;
+    let emailError = null;
     try {
-      await transporter.sendMail(mailOptions);
+      await sendMail(mailOptions);
+      emailSent = true;
       console.log(' Email envoyé avec succès à:', email);
-    } catch (emailError) {
-      console.error(' Erreur envoi email:', emailError);
+    } catch (err) {
+      emailError = err.message;
+      console.error(' Erreur envoi email:', err);
     }
-    
+
     res.status(201).json({
       success: true,
-      message: 'Chauffeur créé avec succès. Les identifiants ont été envoyés par email.',
+      message: emailSent
+        ? 'Chauffeur créé avec succès. Les identifiants ont été envoyés par email.'
+        : 'Chauffeur créé. L\'email n\'a pas pu être envoyé — communiquez les identifiants manuellement.',
+      emailSent,
+      emailError: emailSent ? undefined : emailError,
       chauffeur: {
         id: user.chauffeur.id,
         nom: user.chauffeur.nom,

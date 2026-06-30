@@ -2,6 +2,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const { configureCors } = require("./src/config/cors");
+const { isEmailConfigured, verifySmtp, getEmailUser } = require("./src/config/email");
 
 dotenv.config();
 
@@ -16,6 +17,24 @@ app.use(express.json());
 // Santé (Railway / monitoring)
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, service: "airfawers-auto-api" });
+});
+
+app.get("/api/health/email", async (req, res) => {
+  const configured = isEmailConfigured();
+  if (!configured) {
+    return res.json({
+      ok: false,
+      configured: false,
+      message: "EMAIL_USER et EMAIL_PASSWORD (ou EMAIL_PASS) non définis sur le serveur.",
+    });
+  }
+  const smtp = await verifySmtp();
+  res.json({
+    ok: smtp.ok,
+    configured: true,
+    user: getEmailUser(),
+    smtp: smtp.ok ? "connecté" : smtp.error,
+  });
 });
 
 // Routes d'authentification admin

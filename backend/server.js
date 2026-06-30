@@ -2,7 +2,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const { configureCors } = require("./src/config/cors");
-const { isEmailConfigured, verifySmtp, getEmailUser } = require("./src/config/email");
+const { isEmailConfigured, verifyEmail, getEmailProvider, getEmailFrom } = require("./src/config/email");
 
 dotenv.config();
 
@@ -20,20 +20,22 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/health/email", async (req, res) => {
-  const configured = isEmailConfigured();
-  if (!configured) {
+  const provider = getEmailProvider();
+  if (!isEmailConfigured()) {
     return res.json({
       ok: false,
       configured: false,
-      message: "EMAIL_USER et EMAIL_PASSWORD (ou EMAIL_PASS) non définis sur le serveur.",
+      message:
+        "Définissez BREVO_API_KEY + EMAIL_FROM (Railway) ou EMAIL_USER + EMAIL_PASS (local).",
     });
   }
-  const smtp = await verifySmtp();
+  const check = await verifyEmail();
   res.json({
-    ok: smtp.ok,
+    ok: check.ok,
     configured: true,
-    user: getEmailUser(),
-    smtp: smtp.ok ? "connecté" : smtp.error,
+    provider,
+    from: getEmailFrom() || undefined,
+    status: check.ok ? "connecté" : check.error,
   });
 });
 

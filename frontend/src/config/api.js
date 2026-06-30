@@ -7,10 +7,19 @@ function stripTrailingSlash(url) {
   return url?.replace(/\/$/, "") ?? "";
 }
 
+/** Ajoute https:// si l'URL est un domaine sans protocole (évite les chemins relatifs sur Vercel). */
+function normalizeApiOrigin(url) {
+  const trimmed = stripTrailingSlash(String(url ?? "").trim());
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return trimmed;
+  return `https://${trimmed}`;
+}
+
 function getApiOrigin() {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl !== undefined && String(envUrl).trim() !== "") {
-    return stripTrailingSlash(envUrl);
+    return normalizeApiOrigin(envUrl);
   }
   return "http://localhost:4000";
 }

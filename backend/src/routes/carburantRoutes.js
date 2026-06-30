@@ -7,10 +7,14 @@ const {
 	getRapport,
 	confirmerRecuperationCarburant,
 	getConfirmationsRecentes,
-	getHistoriqueConfirmationsVehicule
+	getHistoriqueConfirmationsVehicule,
+	getPrixCarburant
 } = require('../controllers/carburantController');
 
 const router = express.Router();
+
+// Prix carburant (Essence / Gasoil)
+router.get('/prix', getPrixCarburant);
 
 // Estimation pour un véhicule
 router.get('/estimation/:vehiculeId', getEstimation);

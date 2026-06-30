@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUser,
@@ -7,7 +7,8 @@ import {
   faIdCard,
   faCar,
   faSpinner,
-  faLock
+  faLock,
+  faCamera
 } from '@fortawesome/free-solid-svg-icons';
 import ChangePasswordModal from '../components/modals/ChangePasswordModal';
 import { apiPath } from '@/config/api';
@@ -17,6 +18,9 @@ const ProfileChauffeur = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchChauffeurProfile();
@@ -49,6 +53,41 @@ const ProfileChauffeur = () => {
       setError('Erreur réseau lors de la récupération du profil.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhotoSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setPhotoError('');
+    setUploadingPhoto(true);
+
+    try {
+      const token = localStorage.getItem('chauffeurToken');
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await fetch(apiPath('/chauffeur/profile/photo'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erreur lors du téléversement');
+      }
+
+      setProfile((prev) => ({ ...prev, photoUrl: data.photoUrl }));
+    } catch (uploadError) {
+      setPhotoError(uploadError.message);
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -97,10 +136,41 @@ const ProfileChauffeur = () => {
           {/* Avatar avec icône utilisateur */}
           <div className="flex flex-col items-center">
             <div className="relative mb-4">
-              <div className="h-32 w-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">
-                <FontAwesomeIcon icon={faUser} className="text-4xl text-blue-600" />
-              </div>
+              {profile.photoUrl ? (
+                <img
+                  src={profile.photoUrl}
+                  alt={`${profile.prenom} ${profile.nom}`}
+                  className="h-32 w-32 rounded-full border-4 border-blue-200 object-cover"
+                />
+              ) : (
+                <div className="h-32 w-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">
+                  <FontAwesomeIcon icon={faUser} className="text-4xl text-blue-600" />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="absolute bottom-0 right-0 rounded-full bg-blue-600 p-2 text-white shadow hover:bg-blue-700 disabled:opacity-50"
+                title="Changer la photo"
+              >
+                {uploadingPhoto ? (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin text-sm" />
+                ) : (
+                  <FontAwesomeIcon icon={faCamera} className="text-sm" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
             </div>
+            {photoError && (
+              <p className="mb-2 text-center text-xs text-red-600">{photoError}</p>
+            )}
             <h2 className="text-xl font-semibold text-gray-800">
               {profile.prenom} {profile.nom}
             </h2>

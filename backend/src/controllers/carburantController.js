@@ -1,7 +1,12 @@
 const prisma = require('../config/prisma');
+const {
+	FUEL_PRICES_FC,
+	FUEL_LABELS,
+	getPrixLitre,
+	normalizeTypeCarburant,
+} = require('../config/fuelPrices');
 
 // Constantes de calcul
-const PRIX_LITRE_FC = 2990; // FC par litre
 const COEFFICIENTS_CATEGORIE = {
 	HEAVY: 0.20, // 20 L / 100 km -> 0.20 L/km
 	LIGHT: 0.08 // 8 L / 100 km -> 0.08 L/km
@@ -21,11 +26,14 @@ async function getEstimation(req, res) {
 
 		const coef = getCoefficientCategorie(vehicule.categorie);
 		const estimationLitres = (vehicule.weeklyKm || 0) * coef; // L
-		const cout = Math.round(estimationLitres * PRIX_LITRE_FC);
+		const prixLitre = getPrixLitre(vehicule.typeCarburant);
+		const cout = Math.round(estimationLitres * prixLitre);
 		const marge = 0.10; // ±10%
 
 		return res.json({
 			vehiculeId: vehicule.id,
+			typeCarburant: normalizeTypeCarburant(vehicule.typeCarburant),
+			prixLitre,
 			weeklyKm: vehicule.weeklyKm,
 			coefficient: coef,
 			estimationLitres,
@@ -58,7 +66,8 @@ async function attribuerCarburant(req, res) {
 		});
 		if (!vehicule) return res.status(404).json({ error: 'Véhicule non trouvé' });
 
-		const cout = Math.round(quantite * PRIX_LITRE_FC);
+		const prixLitre = getPrixLitre(vehicule.typeCarburant);
+		const cout = Math.round(quantite * prixLitre);
 
 		const attribution = await prisma.attributionCarburant.create({
 			data: {
@@ -340,6 +349,13 @@ async function getHistoriqueConfirmationsVehicule(req, res) {
 	}
 }
 
+function getPrixCarburant(req, res) {
+	return res.json({
+		prix: FUEL_PRICES_FC,
+		labels: FUEL_LABELS,
+	});
+}
+
 module.exports = {
 	getEstimation,
 	attribuerCarburant,
@@ -348,7 +364,8 @@ module.exports = {
 	getRapport,
 	confirmerRecuperationCarburant,
 	getConfirmationsRecentes,
-	getHistoriqueConfirmationsVehicule
+	getHistoriqueConfirmationsVehicule,
+	getPrixCarburant,
 };
 
 

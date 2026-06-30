@@ -2,6 +2,7 @@ import { FaCar, FaFilePdf, FaUserTie } from "react-icons/fa";
 import Modal from "../UI/Modal";
 import Button from "../UI/Button";
 import { downloadRecordPdf } from "../../utils/exportData";
+import { getFuelLabel, getPrixLitre } from "@/config/fuelPrices";
 
 export const VehicleDetailsModal = ({ isOpen, vehicle, onClose }) => {
   if (!isOpen || !vehicle) return null;
@@ -20,6 +21,10 @@ export const VehicleDetailsModal = ({ isOpen, vehicle, onClose }) => {
             ["Marque", vehicle.marque],
             ["Modèle", vehicle.modele],
             ["Catégorie", vehicle.categorie],
+            [
+              "Carburant",
+              `${getFuelLabel(vehicle.typeCarburant)} (${getPrixLitre(vehicle.typeCarburant).toLocaleString("fr-FR")} FC/L)`,
+            ],
             ["Statut", vehicle.chauffeur ? "Attribué" : "Non attribué"],
           ],
         },
@@ -91,6 +96,12 @@ export const VehicleDetailsModal = ({ isOpen, vehicle, onClose }) => {
               <div>
                 <span className="text-slate-600">Catégorie:</span>{" "}
                 {vehicle.categorie}
+              </div>
+              <div>
+                <span className="text-slate-600">Carburant:</span>{" "}
+                {getFuelLabel(vehicle.typeCarburant)} (
+                {getPrixLitre(vehicle.typeCarburant).toLocaleString("fr-FR")}{" "}
+                FC/L)
               </div>
               <div>
                 <span className="text-slate-600">Statut:</span>{" "}

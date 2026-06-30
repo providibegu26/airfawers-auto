@@ -139,6 +139,7 @@ async function loginChauffeur(req, res) {
       success: true,
       message: 'Connexion chauffeur réussie',
       token: token,
+      requiresPasswordChange: Boolean(user.doitChangerMotDePasse),
       user: {
         id: user.id,
         email: user.email,
@@ -147,7 +148,8 @@ async function loginChauffeur(req, res) {
           nom: user.chauffeur.nom,
           prenom: user.chauffeur.prenom
         },
-        role: 'chauffeur'
+        role: 'chauffeur',
+        doitChangerMotDePasse: Boolean(user.doitChangerMotDePasse),
       }
     });
     
@@ -197,8 +199,9 @@ async function createChauffeurAccount(req, res) {
     const user = await prisma.user.create({
       data: {
         email,
-        motDePasse: hashedPassword, // Utiliser motDePasse au lieu de password
+        motDePasse: hashedPassword,
         motDePasseDefini: true,
+        doitChangerMotDePasse: true,
         role: 'chauffeur',
         chauffeur: {
           create: {
@@ -318,7 +321,8 @@ async function getChauffeurProfile(req, res) {
       include: {
         user: {
           select: {
-            email: true
+            email: true,
+            doitChangerMotDePasse: true,
           }
         },
         vehicules: true
@@ -384,9 +388,17 @@ async function getChauffeurProfile(req, res) {
       chauffeur: {
         id: chauffeur.id,
         nom: chauffeur.nom,
+        postnom: chauffeur.postnom,
         prenom: chauffeur.prenom,
+        sexe: chauffeur.sexe,
+        statut: chauffeur.statut,
         telephone: chauffeur.telephone,
+        photoUrl: chauffeur.photoUrl,
         email: chauffeur.user.email,
+        user: {
+          email: chauffeur.user.email,
+          doitChangerMotDePasse: chauffeur.user.doitChangerMotDePasse,
+        },
         vehicule: vehiculeWithEstimations
       }
     };
@@ -405,9 +417,77 @@ async function getChauffeurProfile(req, res) {
   }
 }
 
+async function personalizeChauffeurPassword(req, res) {
+  try {
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le nouveau mot de passe et sa confirmation sont requis',
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Les mots de passe ne correspondent pas',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le mot de passe doit contenir au moins 6 caractères',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user || user.role !== 'chauffeur') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé',
+      });
+    }
+
+    if (!user.doitChangerMotDePasse) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le mot de passe a déjà été personnalisé',
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        motDePasse: hashedPassword,
+        motDePasseDefini: true,
+        doitChangerMotDePasse: false,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Mot de passe personnalisé avec succès',
+    });
+  } catch (error) {
+    console.error('Erreur personnalisation mot de passe:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+    });
+  }
+}
+
 module.exports = {
   loginAdmin,
   loginChauffeur,
   createChauffeurAccount,
-  getChauffeurProfile
+  getChauffeurProfile,
+  personalizeChauffeurPassword,
 };

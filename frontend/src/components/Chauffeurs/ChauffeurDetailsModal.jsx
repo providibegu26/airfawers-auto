@@ -73,6 +73,19 @@ export const ChauffeurDetailsModal = ({ chauffeur, onClose, vehicles }) => {
       }
     >
       <div id="chauffeur-details-modal" className="space-y-3">
+        <div className="flex justify-center">
+          {chauffeur.photoUrl ? (
+            <img
+              src={chauffeur.photoUrl}
+              alt={`${chauffeur.prenom} ${chauffeur.nom}`}
+              className="h-24 w-24 rounded-full border-2 border-indigo-200 object-cover"
+            />
+          ) : (
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+              <FaUserTie className="text-3xl" />
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 gap-3">
           <div className="rounded-lg bg-slate-50 p-3">
             <h4 className="mb-3 font-bold text-slate-800">

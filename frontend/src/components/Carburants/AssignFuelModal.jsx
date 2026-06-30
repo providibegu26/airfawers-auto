@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import Modal from "../UI/Modal";
 import Button from "../UI/Button";
 import { apiPath } from "@/config/api";
+import { getFuelLabel, getPrixLitre } from "@/config/fuelPrices";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
@@ -15,7 +16,8 @@ const AssignFuelModal = ({ show, onClose, vehicle, onSuccess }) => {
   const estLitres = weeklyKm * coef;
   const minLitres = estLitres * 0.9;
   const maxLitres = estLitres * 1.1;
-  const prixFC = 2990;
+  const typeCarburant = vehicle?.typeCarburant || "ESSENCE";
+  const prixFC = getPrixLitre(typeCarburant);
   const coutFC = estLitres * prixFC;
 
   const [quantity, setQuantity] = useState("");
@@ -130,6 +132,12 @@ const AssignFuelModal = ({ show, onClose, vehicle, onSuccess }) => {
               </p>
             </div>
             <div>
+              <p className="text-xs text-slate-500">Carburant</p>
+              <p className="text-sm font-medium">
+                {getFuelLabel(typeCarburant)}
+              </p>
+            </div>
+            <div>
               <p className="text-xs text-slate-500">Dernier ravitail.</p>
               <p className="text-sm font-medium">-</p>
             </div>
@@ -150,8 +158,9 @@ const AssignFuelModal = ({ show, onClose, vehicle, onSuccess }) => {
             )
           </p>
           <p className="mt-1 text-xs text-indigo-700">
-            Catégorie: {String(vehicle?.categorie || "LIGHT")} • Km/sem:{" "}
-            {weeklyKm} • Coût estimé: {coutFC.toFixed(0)} FC
+            Catégorie: {String(vehicle?.categorie || "LIGHT")} • Carburant:{" "}
+            {getFuelLabel(typeCarburant)} • Km/sem: {weeklyKm} • Coût estimé:{" "}
+            {coutFC.toFixed(0)} FC
           </p>
         </div>
 

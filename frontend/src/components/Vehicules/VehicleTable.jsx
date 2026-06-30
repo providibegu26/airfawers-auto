@@ -5,6 +5,7 @@ import Modal from "../UI/Modal";
 import Button from "../UI/Button";
 import StatusBadge from "../UI/StatusBadge";
 import { VEHICULE_STATUS, resolveStatus } from "../UI/statusColors";
+import { getFuelLabel } from "@/config/fuelPrices";
 import { VehicleDetailsModal } from "./VehicleDetailsModal";
 import { EditVehicleModal } from "./EditVehicleModal";
 import { AssignDriverModal } from "./AssignDriverModal";
@@ -62,6 +63,15 @@ export const VehicleTable = ({
             variant={v.categorie === "HEAVY" ? "danger" : "info"}
             label={v.categorie === "HEAVY" ? "HEAVY" : "LIGHT"}
           />
+        ),
+      },
+      {
+        key: "typeCarburant",
+        header: "Carburant",
+        render: (v) => (
+          <span className="text-slate-700">
+            {getFuelLabel(v.typeCarburant)}
+          </span>
         ),
       },
       {

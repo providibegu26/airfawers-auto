@@ -30,6 +30,11 @@ const LoginChauffeur = () => {
       if (data.success) {
         localStorage.setItem("chauffeurToken", data.token);
         localStorage.setItem("chauffeurUser", JSON.stringify(data.user));
+        if (data.requiresPasswordChange) {
+          localStorage.setItem("chauffeurRequiresPasswordChange", "true");
+        } else {
+          localStorage.removeItem("chauffeurRequiresPasswordChange");
+        }
         navigate("/chauffeur");
       } else {
         setError(data.message || "Erreur de connexion");

@@ -9,6 +9,7 @@ export const AddVehicleModal = ({ onClose, onSave }) => {
     marque: "Toyota",
     modele: "",
     categorie: "LIGHT",
+    typeCarburant: "ESSENCE",
     kilometrage: "",
   });
 
@@ -19,6 +20,7 @@ export const AddVehicleModal = ({ onClose, onSave }) => {
       marque: form.marque,
       modele: form.modele,
       categorie: form.categorie,
+      typeCarburant: form.typeCarburant,
       kilometrage: Number(form.kilometrage),
       statut: "non attribué",
     });
@@ -34,6 +36,15 @@ export const AddVehicleModal = ({ onClose, onSave }) => {
     },
     { label: "Modèle", name: "modele", type: "text", required: true },
     { label: "Catégorie", name: "categorie", type: "select", options: ["LIGHT", "HEAVY"] },
+    {
+      label: "Type de carburant",
+      name: "typeCarburant",
+      type: "select",
+      options: [
+        { value: "ESSENCE", label: "Essence (2 440 FC/L)" },
+        { value: "GASOIL", label: "Gasoil (2 430 FC/L)" },
+      ],
+    },
     { label: "Kilométrage", name: "kilometrage", type: "number", required: true },
   ];
 
@@ -70,11 +81,15 @@ export const AddVehicleModal = ({ onClose, onSave }) => {
                 }
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
-                {field.options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                {field.options.map((option) => {
+                  const value = typeof option === "object" ? option.value : option;
+                  const label = typeof option === "object" ? option.label : option;
+                  return (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  );
+                })}
               </select>
             ) : (
               <input

@@ -11,11 +11,12 @@ datasource db {
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
-  email             String   @unique
-  motDePasse        String
-  motDePasseDefini  Boolean  @default(false)
-  role              String   @default("chauffeur")
+  id                    Int      @id @default(autoincrement())
+  email                 String   @unique
+  motDePasse            String
+  motDePasseDefini      Boolean  @default(false)
+  doitChangerMotDePasse Boolean  @default(false)
+  role                  String   @default("chauffeur")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @default(now())
   chauffeur         Chauffeur?
@@ -30,6 +31,7 @@ model Chauffeur {
   telephone   String
   dateEmbauche DateTime @default(now())
   statut      String   @default("Non attribué")
+  photoUrl    String?
   userId      Int      @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicules   Vehicule[]
@@ -48,6 +50,7 @@ model Vehicule {
   modele          String
   annee           Int      @default(2024)
   categorie       String   @default("LIGHT")
+  typeCarburant   String   @default("ESSENCE")
   kilometrage     Int      @default(0)
   weeklyKm        Int      @default(500) // Kilométrage hebdomadaire moyen
   statut          String   @default("disponible")

@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { FaCar } from "react-icons/fa";
 import Modal from "../UI/Modal";
 import Button from "../UI/Button";
+import { getFuelLabel, getPrixLitre } from "@/config/fuelPrices";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
@@ -14,6 +15,7 @@ export const EditVehicleModal = ({ isOpen, vehicle, onClose, onSave }) => {
     marque: "Toyota",
     modele: "",
     categorie: "LIGHT",
+    typeCarburant: "ESSENCE",
     kilometrage: "",
   });
 
@@ -24,6 +26,7 @@ export const EditVehicleModal = ({ isOpen, vehicle, onClose, onSave }) => {
         marque: vehicle.marque || "Toyota",
         modele: vehicle.modele || "",
         categorie: vehicle.categorie || "LIGHT",
+        typeCarburant: vehicle.typeCarburant || "ESSENCE",
         kilometrage: vehicle.kilometrage || "",
       });
     }
@@ -117,6 +120,25 @@ export const EditVehicleModal = ({ isOpen, vehicle, onClose, onSave }) => {
             <option value="LIGHT">LIGHT</option>
             <option value="HEAVY">HEAVY</option>
           </select>
+        </div>
+        <div>
+          <label className={labelClass}>Type de carburant</label>
+          <select
+            name="typeCarburant"
+            value={formData.typeCarburant}
+            onChange={handleChange}
+            className={inputClass}
+          >
+            <option value="ESSENCE">
+              Essence ({getPrixLitre("ESSENCE").toLocaleString("fr-FR")} FC/L)
+            </option>
+            <option value="GASOIL">
+              Gasoil ({getPrixLitre("GASOIL").toLocaleString("fr-FR")} FC/L)
+            </option>
+          </select>
+          <p className="mt-1 text-xs text-slate-500">
+            Sélectionné : {getFuelLabel(formData.typeCarburant)}
+          </p>
         </div>
         <div>
           <label className={labelClass}>Kilométrage *</label>

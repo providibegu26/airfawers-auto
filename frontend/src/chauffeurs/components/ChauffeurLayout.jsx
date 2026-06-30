@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import ChauffeurSidebar from "./ChauffeurSidebar";
 import HeaderChauffeur from "./HeaderChauffeur";
@@ -8,10 +8,45 @@ import ChauffeurMaintenanceModal from "./modals/ChauffeurMaintenanceModal";
 import FuelModal from "./modals/FuelModal";
 import BreakdownModal from "./modals/BreakdownModal";
 import MileageChauffeurModal from "./modals/MileageChauffeurModal";
+import FirstLoginPasswordModal from "./modals/FirstLoginPasswordModal";
+import { apiPath } from "@/config/api";
 
 const ChauffeurLayout = () => {
   const [modal, setModal] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [requiresPasswordChange, setRequiresPasswordChange] = useState(
+    () => localStorage.getItem("chauffeurRequiresPasswordChange") === "true"
+  );
+
+  useEffect(() => {
+    const checkPasswordChangeRequired = async () => {
+      if (localStorage.getItem("chauffeurRequiresPasswordChange") === "true") {
+        setRequiresPasswordChange(true);
+        return;
+      }
+
+      const token = localStorage.getItem("chauffeurToken");
+      if (!token) return;
+
+      try {
+        const response = await fetch(apiPath("/auth/chauffeur/profile"), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (
+          data.success &&
+          data.chauffeur?.user?.doitChangerMotDePasse
+        ) {
+          localStorage.setItem("chauffeurRequiresPasswordChange", "true");
+          setRequiresPasswordChange(true);
+        }
+      } catch {
+        // ignore — le modal restera masqué si le profil est inaccessible
+      }
+    };
+
+    checkPasswordChangeRequired();
+  }, []);
 
   const openModal = (type) => setModal(type);
   const closeModal = () => setModal(null);
@@ -48,6 +83,10 @@ const ChauffeurLayout = () => {
       <FuelModal isOpen={modal === "carburant"} onClose={closeModal} />
       <BreakdownModal isOpen={modal === "panne"} onClose={closeModal} />
       <MileageChauffeurModal isOpen={modal === "kilometrage"} onClose={closeModal} />
+      <FirstLoginPasswordModal
+        isOpen={requiresPasswordChange}
+        onSuccess={() => setRequiresPasswordChange(false)}
+      />
     </div>
   );
 };

@@ -41,8 +41,9 @@ async function createChauffeur(req, res) {
     const user = await prisma.user.create({
       data: {
         email,
-        motDePasse: hashedPassword, // Utiliser motDePasse au lieu de password
+        motDePasse: hashedPassword,
         motDePasseDefini: true,
+        doitChangerMotDePasse: true,
         role: 'chauffeur',
         chauffeur: {
           create: {

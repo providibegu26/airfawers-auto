@@ -38,6 +38,7 @@ const ChauffeurSidebar = ({
     localStorage.removeItem("chauffeurUser");
     localStorage.removeItem("chauffeurProfile");
     localStorage.removeItem("chauffeurVehicle");
+    localStorage.removeItem("chauffeurRequiresPasswordChange");
 
     navigate("/chauffeur/login");
     window.location.reload();

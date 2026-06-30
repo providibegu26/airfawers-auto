@@ -72,6 +72,10 @@ app.use('/api/chauffeur/carburant', carburantRoutes);
 const passwordChangeRoutes = require('./src/routes/passwordChangeRoutes');
 app.use('/api/auth/chauffeur/password-change', passwordChangeRoutes);
 
+// Profil chauffeur (photo)
+const chauffeurProfileRoutes = require('./src/routes/chauffeurProfileRoutes');
+app.use('/api/chauffeur/profile', chauffeurProfileRoutes);
+
 // Routes pour les pannes
 const { chauffeurPanneRoutes, adminPanneRoutes, panneMetaRoutes } = require('./src/routes/panneRoutes');
 app.use('/api/chauffeur/pannes', chauffeurPanneRoutes);

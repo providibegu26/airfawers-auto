@@ -1,9 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
 const { getCurrentWeekKey } = require('../utils/weekKinshasa');
+const { getPrixLitre } = require('../config/fuelPrices');
 
 const prisma = new PrismaClient();
 
-const PRIX_LITRE_FC = 2990;
 const COEFFICIENTS = { HEAVY: 0.2, LIGHT: 0.08 };
 
 const getCoef = (categorie) =>
@@ -117,6 +117,7 @@ async function upsertHistoriqueConsommation({
   vehiculeId,
   semaine,
   categorie,
+  typeCarburant,
   kilometrageAvant,
   kilometrageApres,
   source,
@@ -132,7 +133,7 @@ async function upsertHistoriqueConsommation({
   const kmParcourus = Math.max(0, kilometrageApres - baseAvant);
   const coef = getCoef(categorie);
   const consommation = kmParcourus * coef;
-  const cout = Math.round(consommation * PRIX_LITRE_FC);
+  const cout = Math.round(consommation * getPrixLitre(typeCarburant));
 
   return prisma.historiqueConsommation.upsert({
     where: {
@@ -257,6 +258,7 @@ async function updateMileageCore({ vehiculeId, newMileage, source, chauffeurId }
     vehiculeId,
     semaine,
     categorie: vehicule.categorie,
+    typeCarburant: vehicule.typeCarburant,
     kilometrageAvant: previousMileage,
     kilometrageApres: parsedMileage,
     source,

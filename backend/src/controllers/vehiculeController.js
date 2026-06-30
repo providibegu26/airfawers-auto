@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function createVehicule(req, res) {
   try {
     console.log('BODY VEHICULE:', req.body);
-    const { marque, modele, immatriculation, categorie, kilometrage, statut, chauffeurId } = req.body;
+    const { marque, modele, immatriculation, categorie, typeCarburant, kilometrage, statut, chauffeurId } = req.body;
     
     const vehicule = await prisma.vehicule.create({
       data: {
@@ -13,6 +13,7 @@ async function createVehicule(req, res) {
         modele,
         immatriculation,
         categorie,
+        typeCarburant: typeCarburant || 'ESSENCE',
         kilometrage: Number(kilometrage),
         statut: statut || "non attribué",
         chauffeurId: chauffeurId || null,
@@ -269,9 +270,9 @@ async function assignDriver(req, res) {
 async function updateVehicule(req, res) {
   try {
     const { id } = req.params;
-    const { marque, modele, immatriculation, categorie, kilometrage, statut, chauffeurId } = req.body;
+    const { marque, modele, immatriculation, categorie, typeCarburant, kilometrage, statut, chauffeurId } = req.body;
     
-    console.log(' Mise à jour véhicule:', { id, marque, modele, immatriculation, categorie, kilometrage });
+    console.log(' Mise à jour véhicule:', { id, marque, modele, immatriculation, categorie, typeCarburant, kilometrage });
     
     const vehicule = await prisma.vehicule.update({
       where: { id: parseInt(id) },
@@ -280,6 +281,7 @@ async function updateVehicule(req, res) {
         modele,
         immatriculation,
         categorie,
+        ...(typeCarburant ? { typeCarburant } : {}),
         kilometrage: Number(kilometrage),
         statut,
         chauffeurId: chauffeurId || null

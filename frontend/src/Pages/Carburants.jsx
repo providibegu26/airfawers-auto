@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { FaGasPump, FaHistory } from "react-icons/fa";
 import FuelCards from "../components/Carburants/FuelCards";
 import FuelConsumptionChart from "../components/Carburants/FuelConsumptionChart";
+import FuelMonthlyConsumptionChart from "../components/Carburants/FuelMonthlyConsumptionChart";
 import FuelTable from "../components/Carburants/FuelTable";
 import AssignFuelModal from "../components/Carburants/AssignFuelModal";
 import FuelGlobalHistoryModal from "../components/Carburants/FuelGlobalHistoryModal";
@@ -156,7 +157,10 @@ const Carburants = () => {
           monthlyConsumptionLitres={monthlyConsumptionLitres}
           loading={loading}
         />
-        <FuelConsumptionChart />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <FuelConsumptionChart />
+          <FuelMonthlyConsumptionChart />
+        </div>
       </section>
 
       <Card padding={false} className="overflow-hidden">

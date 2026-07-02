@@ -109,6 +109,18 @@ export const fetchFuelCostLast6Months = async () => {
   }));
 };
 
+/** Consommation carburant totale flotte par mois (litres, 6 derniers mois) */
+export const fetchFleetMonthlyFuelConsumption = async () => {
+  const aggreg = await fetchFuelRapportMonthly();
+  const keys = getLast6MonthKeys();
+
+  return keys.map((key) => ({
+    key,
+    label: formatMonthLabel(key),
+    litres: Number((aggreg[key]?.litres || 0).toFixed(1)),
+  }));
+};
+
 /** Consommation carburant moyenne mensuelle par véhicule (litres, 6 mois) */
 export const fetchAvgMonthlyFuelConsumption = async () => {
   const [vehicles, aggreg] = await Promise.all([

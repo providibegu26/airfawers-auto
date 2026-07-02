@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   FaEnvelope,
   FaLock,
@@ -9,6 +9,8 @@ import {
   FaRoute,
   FaMapMarkerAlt,
   FaChartLine,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 
 const THEMES = {
@@ -53,6 +55,7 @@ const AuthShell = ({
 }) => {
   const theme = THEMES[role] ?? THEMES.admin;
   const Illustration = theme.illustration;
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4 sm:p-6">
@@ -145,14 +148,30 @@ const AuthShell = ({
                 <FaLock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
                   required
-                  className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-11 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  aria-label={
+                    showPassword
+                      ? "Masquer le mot de passe"
+                      : "Afficher le mot de passe"
+                  }
+                >
+                  {showPassword ? (
+                    <FaEyeSlash className="text-sm" />
+                  ) : (
+                    <FaEye className="text-sm" />
+                  )}
+                </button>
               </div>
             </div>
 

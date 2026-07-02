@@ -1,16 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle, FaGasPump, FaTools, FaExclamationTriangle } from "react-icons/fa";
 import NotificationsPage from "../../components/notifications/NotificationsPage";
 import chauffeurNotificationService from "../../services/chauffeurNotificationService";
 
+function buildSubtitle(notification, getMaintenanceLabel) {
+  const parts = [];
+
+  if (notification.vehicle) parts.push(notification.vehicle);
+
+  if (notification.fuelAttributionId) {
+    if (notification.quantity) parts.push(`${notification.quantity} L`);
+    parts.push("Carburant attribué");
+  } else {
+    if (notification.maintenanceType) {
+      parts.push(getMaintenanceLabel(notification.maintenanceType));
+    }
+    if (notification.daysRemaining) {
+      parts.push(`${notification.daysRemaining} jour(s) restant(s)`);
+    }
+  }
+
+  const meta = parts.join(" · ");
+  return meta ? `${notification.message} — ${meta}` : notification.message;
+}
+
 const NotificationsChauffeur = () => {
   const [notifications, setNotifications] = useState([]);
-  const [serviceStatus, setServiceStatus] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
   const syncState = () => {
     setNotifications(chauffeurNotificationService.getNotifications());
-    setServiceStatus(chauffeurNotificationService.getStatus());
   };
 
   useEffect(() => {
@@ -35,33 +53,19 @@ const NotificationsChauffeur = () => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const statusItems = serviceStatus
-    ? [
-        {
-          label: "Statut",
-          value:
-            serviceStatus.permission === "granted" ? "Activé" : "Désactivé",
-          tone: serviceStatus.permission === "granted" ? "green" : "red",
-        },
-        { label: "Total", value: serviceStatus.notificationCount, tone: "indigo" },
-        { label: "Non lues", value: serviceStatus.unreadCount, tone: "slate" },
-        { label: "Véhicule", value: serviceStatus.vehicle || "—", tone: "slate" },
-      ]
-    : [];
-
   return (
     <NotificationsPage
-      title="Mes alertes"
-      subtitle="Entretiens et carburant de votre véhicule"
+      title="Notifications"
+      backPath="/chauffeur"
+      summarySubtitle="Entretiens et carburant de votre véhicule"
       notifications={notifications}
-      serviceStatus={serviceStatus}
       isInitializing={isInitializing}
       unreadCount={unreadCount}
-      statusItems={statusItems}
       isFuelNotification={(n) => Boolean(n.fuelAttributionId)}
       getMaintenanceLabel={(type) =>
         chauffeurNotificationService.getTypeLabel(type)
       }
+      getNotificationSubtitle={buildSubtitle}
       onRefresh={async () => {
         await chauffeurNotificationService.manualCheck();
         syncState();
@@ -78,35 +82,6 @@ const NotificationsChauffeur = () => {
         chauffeurNotificationService.removeNotification(id);
         syncState();
       }}
-      renderExtraMeta={(notification, getMaintenanceLabel) => (
-        <>
-          {notification.fuelAttributionId ? (
-            <>
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                <FaGasPump className="h-3 w-3" />
-                {notification.quantity} L
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600">
-                <FaCheckCircle className="h-3 w-3" />
-                Carburant attribué
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
-                <FaTools className="h-3 w-3" />
-                {getMaintenanceLabel(notification.maintenanceType)}
-              </span>
-              {notification.daysRemaining && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
-                  <FaExclamationTriangle className="h-3 w-3" />
-                  {notification.daysRemaining} jour(s)
-                </span>
-              )}
-            </>
-          )}
-        </>
-      )}
     />
   );
 };

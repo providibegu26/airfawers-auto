@@ -1,8 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import {
   FaBell,
   FaCar,
   FaCheckCircle,
-  FaCircle,
   FaCog,
   FaExclamationTriangle,
   FaGasPump,
@@ -10,33 +10,22 @@ import {
   FaTools,
   FaTrash,
 } from "react-icons/fa";
+import {
+  ProfileSettingsPage,
+  ProfileSettingsHeader,
+  ProfileSummaryCard,
+  SettingsSectionLabel,
+  SettingsGroup,
+  SettingsRow,
+  SettingsDivider,
+} from "../profile/ProfileSettingsLayout";
 
 const TYPE_STYLES = {
-  urgent: {
-    icon: FaExclamationTriangle,
-    iconWrap: "bg-red-100 text-red-600",
-    unread: "border-l-4 border-red-500 bg-red-50/80",
-  },
-  warning: {
-    icon: FaTools,
-    iconWrap: "bg-amber-100 text-amber-600",
-    unread: "border-l-4 border-amber-500 bg-amber-50/80",
-  },
-  info: {
-    icon: FaCar,
-    iconWrap: "bg-blue-100 text-blue-600",
-    unread: "border-l-4 border-blue-500 bg-blue-50/80",
-  },
-  fuel: {
-    icon: FaGasPump,
-    iconWrap: "bg-emerald-100 text-emerald-600",
-    unread: "border-l-4 border-emerald-500 bg-emerald-50/80",
-  },
-  default: {
-    icon: FaBell,
-    iconWrap: "bg-slate-100 text-slate-600",
-    unread: "border-l-4 border-slate-400 bg-slate-50/80",
-  },
+  urgent: { icon: FaExclamationTriangle, wrap: "bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400" },
+  warning: { icon: FaTools, wrap: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400" },
+  info: { icon: FaCar, wrap: "bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400" },
+  fuel: { icon: FaGasPump, wrap: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400" },
+  default: { icon: FaBell, wrap: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
 };
 
 export function formatNotificationTimestamp(timestamp) {
@@ -50,8 +39,36 @@ export function formatNotificationTimestamp(timestamp) {
   if (diffMins < 1) return "À l'instant";
   if (diffMins < 60) return `Il y a ${diffMins} min`;
   if (diffHours < 24) return `Il y a ${diffHours}h`;
-  if (diffDays < 7) return `Il y a ${diffDays} jour(s)`;
-  return time.toLocaleDateString("fr-FR");
+  if (diffDays < 7) return `Il y a ${diffDays}j`;
+  return time.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
+function getDateGroupLabel(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const notifDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.floor((today - notifDay) / 86400000);
+
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return "Cette semaine";
+  return "Plus ancien";
+}
+
+function groupNotificationsByDate(notifications) {
+  const groups = new Map();
+  const order = ["Aujourd'hui", "Hier", "Cette semaine", "Plus ancien"];
+
+  notifications.forEach((n) => {
+    const label = getDateGroupLabel(n.timestamp);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(n);
+  });
+
+  return order
+    .filter((label) => groups.has(label))
+    .map((label) => ({ label, items: groups.get(label) }));
 }
 
 function getNotificationStyle(notification, isFuel) {
@@ -59,209 +76,191 @@ function getNotificationStyle(notification, isFuel) {
   return TYPE_STYLES[notification.type] || TYPE_STYLES.default;
 }
 
-function StatusPill({ label, value, tone = "slate" }) {
-  const tones = {
-    slate: "bg-slate-100 text-slate-700",
-    green: "bg-emerald-100 text-emerald-700",
-    red: "bg-red-100 text-red-700",
-    indigo: "bg-indigo-100 text-indigo-700",
-  };
+function NotificationRow({
+  notification,
+  isFuel,
+  subtitle,
+  onMarkAsRead,
+  onRemove,
+}) {
+  const style = getNotificationStyle(notification, isFuel);
+  const Icon = style.icon;
+  const isUnread = !notification.read;
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white/80 p-3 backdrop-blur-sm">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className={`mt-1 text-sm font-semibold ${tones[tone] || tones.slate} inline-flex rounded-lg px-2 py-0.5`}>
-        {value}
-      </p>
+    <div className="flex items-start gap-3 px-4 py-3.5">
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${style.wrap}`}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+
+      <button
+        type="button"
+        onClick={() => isUnread && onMarkAsRead(notification.id)}
+        className="min-w-0 flex-1 text-left"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={`text-sm font-medium leading-snug ${
+              isUnread
+                ? "text-slate-900 dark:text-white"
+                : "text-slate-600 dark:text-slate-400"
+            }`}
+          >
+            {notification.title}
+            {isUnread && (
+              <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-red-500 align-middle" />
+            )}
+          </p>
+          <span className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500">
+            {formatNotificationTimestamp(notification.timestamp)}
+          </span>
+        </div>
+        <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {subtitle || notification.message}
+        </p>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onRemove(notification.id)}
+        className="shrink-0 rounded-lg p-2 text-slate-300 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+        aria-label="Supprimer"
+      >
+        <FaTrash className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
 
 export default function NotificationsPage({
   title = "Notifications",
-  subtitle,
+  backPath,
   notifications = [],
-  serviceStatus,
   isInitializing = false,
   unreadCount = 0,
+  summarySubtitle,
   onRefresh,
   onClearAll,
   onMarkAsRead,
   onRemove,
   getMaintenanceLabel,
   isFuelNotification,
-  renderExtraMeta,
-  statusItems = [],
+  getNotificationSubtitle,
 }) {
+  const navigate = useNavigate();
+  const groups = groupNotificationsByDate(notifications);
+
   if (isInitializing) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-center">
-          <FaCog className="mx-auto mb-4 h-8 w-8 animate-spin text-indigo-500" />
-          <p className="text-sm text-slate-600">Chargement des notifications…</p>
+      <ProfileSettingsPage>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <FaCog className="h-8 w-8 animate-spin text-indigo-500" />
         </div>
-      </div>
+      </ProfileSettingsPage>
     );
   }
 
+  const summaryAvatar = (
+    <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+      <FaBell className="h-6 w-6" />
+      {unreadCount > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      )}
+    </div>
+  );
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5 px-1 sm:px-0">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              {title}
-            </h1>
-            {unreadCount > 0 && (
-              <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-semibold text-white">
-                {unreadCount} non lue{unreadCount > 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-          {subtitle && (
-            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-          )}
-        </div>
+    <ProfileSettingsPage>
+      <ProfileSettingsHeader
+        title={title}
+        onBack={() => navigate(backPath ?? -1)}
+      />
 
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
-          >
-            <FaSync className="h-3.5 w-3.5" />
-            Actualiser
-          </button>
-          {notifications.length > 0 && (
-            <button
-              type="button"
-              onClick={onClearAll}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
-            >
-              <FaTrash className="h-3.5 w-3.5" />
-              Tout effacer
-            </button>
-          )}
-        </div>
-      </div>
+      <ProfileSummaryCard
+        avatar={summaryAvatar}
+        name={
+          notifications.length === 0
+            ? "Aucune alerte"
+            : `${notifications.length} notification${notifications.length > 1 ? "s" : ""}`
+        }
+        subtitle={
+          summarySubtitle ??
+          (unreadCount > 0
+            ? `${unreadCount} non lue${unreadCount > 1 ? "s" : ""}`
+            : "Tout est à jour")
+        }
+      />
 
-      {serviceStatus && statusItems.length > 0 && (
-        <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-slate-50 p-4 sm:p-5">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {statusItems.map((item) => (
-              <StatusPill
-                key={item.label}
-                label={item.label}
-                value={item.value}
-                tone={item.tone}
-              />
-            ))}
+      {notifications.length === 0 ? (
+        <SettingsGroup>
+          <div className="px-4 py-12 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
+              <FaBell className="h-5 w-5 text-slate-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              Rien pour le moment
+            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Les alertes apparaîtront ici automatiquement.
+            </p>
           </div>
+        </SettingsGroup>
+      ) : (
+        <div className="space-y-5">
+          {groups.map(({ label, items }) => (
+            <div key={label}>
+              <SettingsSectionLabel>{label}</SettingsSectionLabel>
+              <SettingsGroup>
+                {items.map((notification, index) => {
+                  const isFuel = isFuelNotification(notification);
+                  const subtitle =
+                    getNotificationSubtitle?.(notification, getMaintenanceLabel) ||
+                    notification.message;
+
+                  return (
+                    <div key={notification.id}>
+                      {index > 0 && <SettingsDivider />}
+                      <NotificationRow
+                        notification={notification}
+                        isFuel={isFuel}
+                        subtitle={subtitle}
+                        onMarkAsRead={onMarkAsRead}
+                        onRemove={onRemove}
+                      />
+                    </div>
+                  );
+                })}
+              </SettingsGroup>
+            </div>
+          ))}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-              <FaBell className="h-7 w-7 text-slate-400" />
-            </div>
-            <p className="text-lg font-semibold text-slate-700">
-              Aucune notification
-            </p>
-            <p className="mt-2 max-w-sm text-sm text-slate-500">
-              Les alertes d&apos;entretien et de carburant apparaîtront ici
-              automatiquement.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {notifications.map((notification) => {
-              const isFuel = isFuelNotification(notification);
-              const style = getNotificationStyle(notification, isFuel);
-              const Icon = style.icon;
-              const isUnread = !notification.read;
-
-              return (
-                <li
-                  key={notification.id}
-                  className={`p-4 transition sm:p-5 ${
-                    isUnread ? style.unread : "bg-white hover:bg-slate-50/80"
-                  }`}
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${style.iconWrap}`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3
-                              className={`text-base font-semibold ${
-                                isUnread ? "text-slate-900" : "text-slate-600"
-                              }`}
-                            >
-                              {notification.title}
-                            </h3>
-                            {isUnread && (
-                              <FaCircle className="h-2 w-2 text-red-500" />
-                            )}
-                          </div>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            {notification.message}
-                          </p>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {notification.vehicle && (
-                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                                <FaCar className="h-3 w-3" />
-                                {notification.vehicle}
-                              </span>
-                            )}
-                            {renderExtraMeta?.(notification, getMaintenanceLabel)}
-                          </div>
-                        </div>
-
-                        <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:flex-col sm:items-end lg:min-w-[140px]">
-                          <span className="text-xs text-slate-400">
-                            {formatNotificationTimestamp(notification.timestamp)}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {isUnread && (
-                              <button
-                                type="button"
-                                onClick={() => onMarkAsRead(notification.id)}
-                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
-                              >
-                                <FaCheckCircle className="h-3 w-3" />
-                                Lu
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => onRemove(notification.id)}
-                              className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                              title="Supprimer"
-                            >
-                              <FaTrash className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <div className="mt-6 space-y-5">
+        <SettingsSectionLabel>Actions</SettingsSectionLabel>
+        <SettingsGroup>
+          <SettingsRow
+            icon={FaSync}
+            label="Actualiser"
+            onClick={onRefresh}
+          />
+          {notifications.length > 0 && (
+            <>
+              <SettingsDivider />
+              <SettingsRow
+                icon={FaTrash}
+                label="Tout effacer"
+                destructive
+                onClick={onClearAll}
+              />
+            </>
+          )}
+        </SettingsGroup>
       </div>
-    </div>
+    </ProfileSettingsPage>
   );
 }

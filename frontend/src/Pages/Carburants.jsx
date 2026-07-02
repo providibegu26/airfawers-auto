@@ -149,17 +149,15 @@ const Carburants = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="space-y-4">
         <FuelCards
           vehicles={vehicles}
           monthlyCostUSD={monthlyCostUSD}
           monthlyConsumptionLitres={monthlyConsumptionLitres}
           loading={loading}
         />
-        <div className="sm:col-span-2 xl:col-span-1">
-          <FuelConsumptionChart />
-        </div>
-      </div>
+        <FuelConsumptionChart />
+      </section>
 
       <Card padding={false} className="overflow-hidden">
         <div className="border-b border-slate-200 px-5 py-4">

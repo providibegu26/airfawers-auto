@@ -94,28 +94,35 @@ const FuelConsumptionChart = () => {
       height="h-auto"
     >
       {loading ? (
-        <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+        <div className="flex h-44 items-center justify-center text-sm text-slate-500">
           Chargement…
         </div>
       ) : topItems.length === 0 ? (
-        <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+        <div className="flex h-44 items-center justify-center text-sm text-slate-500">
           Aucune attribution ce mois
         </div>
       ) : (
-        <div className="flex items-center gap-6">
-          <div className="h-36 w-36 shrink-0">
+        <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:justify-center md:gap-12 lg:gap-16">
+          <div className="h-40 w-40 shrink-0 sm:h-44 sm:w-44">
             <canvas ref={chartRef} />
           </div>
-          <ul className="space-y-1.5">
+          <ul className="w-full max-w-sm space-y-3 sm:w-auto">
             {topItems.map((item, idx) => (
-              <li key={item.label} className="flex items-center gap-2 text-sm text-slate-700">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: COLORS[idx] }}
-                />
-                {item.label}{" "}
-                <span className="tabular-nums text-slate-500">
-                  ({item.litres.toFixed(1)} L)
+              <li
+                key={item.label}
+                className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: COLORS[idx] }}
+                  />
+                  <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                    {item.label}
+                  </span>
+                </div>
+                <span className="shrink-0 text-sm tabular-nums font-semibold text-slate-600 dark:text-slate-300">
+                  {item.litres.toFixed(1)} L
                 </span>
               </li>
             ))}

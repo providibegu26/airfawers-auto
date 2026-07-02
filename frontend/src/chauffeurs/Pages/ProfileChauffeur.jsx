@@ -1,25 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import React, { useState, useEffect, useRef } from "react";
 import {
-  faUser,
-  faEnvelope,
-  faPhone,
-  faIdCard,
-  faCar,
-  faSpinner,
-  faLock,
-  faCamera
-} from '@fortawesome/free-solid-svg-icons';
-import ChangePasswordModal from '../components/modals/ChangePasswordModal';
-import { apiPath } from '@/config/api';
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaCar,
+  FaSpinner,
+  FaLock,
+  FaCamera,
+  FaIdBadge,
+  FaShieldAlt,
+} from "react-icons/fa";
+import ChangePasswordModal from "../components/modals/ChangePasswordModal";
+import { apiPath } from "@/config/api";
+
+function InfoTile({ icon: Icon, label, value }) {
+  if (!value) return null;
+  return (
+    <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
+    </div>
+  );
+}
 
 const ProfileChauffeur = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoError, setPhotoError] = useState('');
+  const [photoError, setPhotoError] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -29,16 +44,16 @@ const ProfileChauffeur = () => {
   const fetchChauffeurProfile = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('chauffeurToken');
-      
+      const token = localStorage.getItem("chauffeurToken");
+
       if (!token) {
-        setError('Vous devez être connecté pour voir votre profil.');
+        setError("Vous devez être connecté pour voir votre profil.");
         setLoading(false);
         return;
       }
 
-      const response = await fetch(apiPath('/auth/chauffeur/profile'), {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(apiPath("/auth/chauffeur/profile"), {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await response.json();
@@ -46,11 +61,11 @@ const ProfileChauffeur = () => {
       if (data.success && data.chauffeur) {
         setProfile(data.chauffeur);
       } else {
-        setError('Erreur lors de la récupération du profil.');
+        setError("Erreur lors de la récupération du profil.");
       }
-    } catch (error) {
-      console.error('Erreur récupération profil:', error);
-      setError('Erreur réseau lors de la récupération du profil.');
+    } catch (err) {
+      console.error("Erreur récupération profil:", err);
+      setError("Erreur réseau lors de la récupération du profil.");
     } finally {
       setLoading(false);
     }
@@ -60,16 +75,16 @@ const ProfileChauffeur = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setPhotoError('');
+    setPhotoError("");
     setUploadingPhoto(true);
 
     try {
-      const token = localStorage.getItem('chauffeurToken');
+      const token = localStorage.getItem("chauffeurToken");
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append("photo", file);
 
-      const response = await fetch(apiPath('/chauffeur/profile/photo'), {
-        method: 'POST',
+      const response = await fetch(apiPath("/chauffeur/profile/photo"), {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
@@ -77,7 +92,7 @@ const ProfileChauffeur = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors du téléversement');
+        throw new Error(data.message || "Erreur lors du téléversement");
       }
 
       setProfile((prev) => ({ ...prev, photoUrl: data.photoUrl }));
@@ -86,17 +101,17 @@ const ProfileChauffeur = () => {
     } finally {
       setUploadingPhoto(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <FontAwesomeIcon icon={faSpinner} className="text-2xl text-blue-600 animate-spin mb-4" />
-          <p className="text-gray-600">Chargement du profil...</p>
+          <FaSpinner className="mx-auto mb-4 h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-sm text-slate-600">Chargement du profil…</p>
         </div>
       </div>
     );
@@ -104,10 +119,10 @@ const ProfileChauffeur = () => {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600 font-medium">Erreur</p>
-          <p className="text-red-500">{error}</p>
+      <div className="mx-auto max-w-3xl px-2">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+          <p className="font-semibold text-red-700">Erreur</p>
+          <p className="mt-1 text-sm text-red-600">{error}</p>
         </div>
       </div>
     );
@@ -115,179 +130,143 @@ const ProfileChauffeur = () => {
 
   if (!profile) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-600 font-medium">Aucun profil trouvé</p>
-          <p className="text-yellow-500">Impossible de récupérer les informations du profil.</p>
+      <div className="mx-auto max-w-3xl px-2">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <p className="font-semibold text-amber-700">Aucun profil trouvé</p>
         </div>
       </div>
     );
   }
 
+  const sexeLabel =
+    profile.sexe === "M"
+      ? "Masculin"
+      : profile.sexe === "F"
+        ? "Féminin"
+        : profile.sexe;
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        <FontAwesomeIcon icon={faIdCard} className="mr-2 text-blue-600" />
-        Profil Chauffeur
-      </h1>
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-1 sm:px-0">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="relative h-28 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 sm:h-36">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_50%)]" />
+        </div>
 
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Avatar avec icône utilisateur */}
-          <div className="flex flex-col items-center">
-            <div className="relative mb-4">
-              {profile.photoUrl ? (
-                <img
-                  src={profile.photoUrl}
-                  alt={`${profile.prenom} ${profile.nom}`}
-                  className="h-32 w-32 rounded-full border-4 border-blue-200 object-cover"
-                />
-              ) : (
-                <div className="h-32 w-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">
-                  <FontAwesomeIcon icon={faUser} className="text-4xl text-blue-600" />
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingPhoto}
-                className="absolute bottom-0 right-0 rounded-full bg-blue-600 p-2 text-white shadow hover:bg-blue-700 disabled:opacity-50"
-                title="Changer la photo"
-              >
-                {uploadingPhoto ? (
-                  <FontAwesomeIcon icon={faSpinner} className="animate-spin text-sm" />
+        <div className="relative px-4 pb-6 sm:px-6">
+          <div className="-mt-14 flex flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-end gap-4">
+              <div className="relative">
+                {profile.photoUrl ? (
+                  <img
+                    src={profile.photoUrl}
+                    alt={`${profile.prenom} ${profile.nom}`}
+                    className="h-24 w-24 rounded-2xl border-4 border-white object-cover shadow-lg sm:h-28 sm:w-28"
+                  />
                 ) : (
-                  <FontAwesomeIcon icon={faCamera} className="text-sm" />
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-blue-100 shadow-lg sm:h-28 sm:w-28">
+                    <FaUser className="h-10 w-10 text-blue-600" />
+                  </div>
                 )}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={handlePhotoSelect}
-              />
-            </div>
-            {photoError && (
-              <p className="mb-2 text-center text-xs text-red-600">{photoError}</p>
-            )}
-            <h2 className="text-xl font-semibold text-gray-800">
-              {profile.prenom} {profile.nom}
-            </h2>
-            <div className="flex items-center mt-1">
-              <FontAwesomeIcon icon={faCar} className="text-gray-400 mr-1" />
-              <span className="text-gray-500">Chauffeur</span>
-            </div>
-            {profile.vehicule && (
-              <div className="mt-2 text-sm text-gray-600">
-                Véhicule: {profile.vehicule.immatriculation}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="absolute -bottom-1 -right-1 rounded-xl bg-blue-600 p-2 text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50"
+                  title="Changer la photo"
+                >
+                  {uploadingPhoto ? (
+                    <FaSpinner className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <FaCamera className="h-3.5 w-3.5" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
               </div>
-            )}
+              <div className="pb-1">
+                <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                  {profile.prenom} {profile.nom}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    <FaIdBadge className="h-3 w-3" />
+                    Chauffeur
+                  </span>
+                  {profile.statut && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      {profile.statut}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Informations du profil */}
-          <div className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {profile.nom && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400" />
-                    Nom
-                  </h3>
-                  <p className="mt-1 text-gray-800">{profile.nom}</p>
-                </div>
-              )}
+          {photoError && (
+            <p className="mt-3 text-sm text-red-600">{photoError}</p>
+          )}
 
-              {profile.postnom && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400" />
-                    Postnom
-                  </h3>
-                  <p className="mt-1 text-gray-800">{profile.postnom}</p>
+          {profile.vehicule && (
+            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <FaCar className="h-4 w-4" />
                 </div>
-              )}
-
-              {profile.prenom && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400" />
-                    Prénom
-                  </h3>
-                  <p className="mt-1 text-gray-800">{profile.prenom}</p>
-                </div>
-              )}
-
-              {profile.user?.email && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faEnvelope} className="mr-2 text-gray-400" />
-                    Email
-                  </h3>
-                  <p className="mt-1 text-gray-800">{profile.user.email}</p>
-                </div>
-              )}
-
-              {profile.telephone && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faPhone} className="mr-2 text-gray-400" />
-                    Téléphone
-                  </h3>
-                  <p className="mt-1 text-gray-800">{profile.telephone}</p>
-                </div>
-              )}
-
-              {profile.sexe && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400" />
-                    Sexe
-                  </h3>
-                  <p className="mt-1 text-gray-800">
-                    {profile.sexe === 'M' ? 'Masculin' : 'Féminin'}
-                  </p>
-                </div>
-              )}
-
-              {profile.statut && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faCar} className="mr-2 text-gray-400" />
-                    Statut
-                  </h3>
-                  <p className="mt-1 text-gray-800">{profile.statut}</p>
-                </div>
-              )}
-
-              {profile.vehicule && (
-                <div className="md:col-span-2">
-                  <h3 className="text-sm font-medium text-gray-500">
-                    <FontAwesomeIcon icon={faCar} className="mr-2 text-gray-400" />
+                  <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
                     Véhicule attribué
-                  </h3>
-                  <p className="mt-1 text-gray-800">
-                    {profile.vehicule.marque} {profile.vehicule.modele} ({profile.vehicule.immatriculation})
+                  </p>
+                  <p className="mt-0.5 font-semibold text-slate-900">
+                    {profile.vehicule.marque} {profile.vehicule.modele}
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    {profile.vehicule.immatriculation}
                   </p>
                 </div>
-              )}
+              </div>
             </div>
-
-            {/* Bouton de changement de mot de passe */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowPasswordModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <FontAwesomeIcon icon={faLock} className="mr-2" />
-                Modifier le mot de passe
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Modal de changement de mot de passe */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <InfoTile icon={FaUser} label="Nom" value={profile.nom} />
+        <InfoTile icon={FaUser} label="Postnom" value={profile.postnom} />
+        <InfoTile icon={FaUser} label="Prénom" value={profile.prenom} />
+        <InfoTile icon={FaEnvelope} label="Email" value={profile.user?.email} />
+        <InfoTile icon={FaPhone} label="Téléphone" value={profile.telephone} />
+        <InfoTile icon={FaUser} label="Sexe" value={sexeLabel} />
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+              <FaShieldAlt className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">Sécurité du compte</p>
+              <p className="text-sm text-slate-500">
+                Modifiez votre mot de passe par email de vérification.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPasswordModal(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+          >
+            <FaLock className="h-3.5 w-3.5" />
+            Modifier le mot de passe
+          </button>
+        </div>
+      </div>
+
       <ChangePasswordModal
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}

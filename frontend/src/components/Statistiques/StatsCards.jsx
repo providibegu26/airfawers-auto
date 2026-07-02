@@ -13,7 +13,7 @@ const API = apiPath("/admin");
 const STAT_ITEMS = [
   { key: "vehicules", label: "Véhicules", icon: FaCar, iconClass: "bg-indigo-100 text-indigo-600" },
   { key: "chauffeurs", label: "Chauffeurs", icon: FaUserTie, iconClass: "bg-blue-100 text-blue-600" },
-  { key: "coutMensuel", label: "Coût mensuel", icon: FaDollarSign, iconClass: "bg-amber-100 text-amber-600", isCurrency: true },
+  { key: "coutAnnuel", label: "Coût annuel", icon: FaDollarSign, iconClass: "bg-amber-100 text-amber-600", isCurrency: true },
   { key: "pannes", label: "Pannes actives", icon: FaExclamationTriangle, iconClass: "bg-red-100 text-red-600" },
 ];
 
@@ -21,7 +21,7 @@ const StatsCards = () => {
   const [values, setValues] = useState({
     vehicules: 0,
     chauffeurs: 0,
-    coutMensuel: 0,
+    coutAnnuel: 0,
     pannes: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -42,13 +42,20 @@ const StatsCards = () => {
         if (cancelled) return;
 
         const now = new Date();
-        const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-        const fc = (rapportsRes.aggreg && rapportsRes.aggreg[key]?.cout) || 0;
+        const year = now.getUTCFullYear();
+        let annualFC = 0;
+        if (rapportsRes.aggreg) {
+          Object.entries(rapportsRes.aggreg).forEach(([monthKey, data]) => {
+            if (monthKey.startsWith(`${year}-`)) {
+              annualFC += data?.cout || 0;
+            }
+          });
+        }
 
         setValues({
           vehicules: (vehRes.vehicules || []).length,
           chauffeurs: (chRes.chauffeurs || []).length,
-          coutMensuel: fc / 2850,
+          coutAnnuel: annualFC / 2850,
           pannes: panneStats.actives || 0,
         });
       } finally {

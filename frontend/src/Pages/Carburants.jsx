@@ -25,6 +25,7 @@ const Carburants = () => {
   const [error, setError] = useState("");
   const [lastAttributions, setLastAttributions] = useState({});
   const [monthlyCostUSD, setMonthlyCostUSD] = useState(0);
+  const [monthlyConsumptionLitres, setMonthlyConsumptionLitres] = useState(0);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [globalHistory, setGlobalHistory] = useState([]);
   const [vehicleHistoryOpen, setVehicleHistoryOpen] = useState(false);
@@ -56,8 +57,11 @@ const Carburants = () => {
     const data = await res.json();
     const now = new Date();
     const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const fc = (data.aggreg && data.aggreg[key]?.cout) || 0;
+    const monthData = (data.aggreg && data.aggreg[key]) || {};
+    const fc = monthData.cout || 0;
+    const litres = monthData.litres || 0;
     setMonthlyCostUSD(fc / 2850);
+    setMonthlyConsumptionLitres(litres);
   };
 
   const refreshAll = async () => {
@@ -145,13 +149,16 @@ const Carburants = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <FuelCards
           vehicles={vehicles}
           monthlyCostUSD={monthlyCostUSD}
+          monthlyConsumptionLitres={monthlyConsumptionLitres}
           loading={loading}
         />
-        <FuelConsumptionChart />
+        <div className="sm:col-span-2 xl:col-span-1">
+          <FuelConsumptionChart />
+        </div>
       </div>
 
       <Card padding={false} className="overflow-hidden">

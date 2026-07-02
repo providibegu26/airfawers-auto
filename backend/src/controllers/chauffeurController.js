@@ -2,6 +2,8 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendMail } = require('../config/email');
+const { buildChauffeurWelcomeEmailHtml, buildChauffeurWelcomeEmailText } = require('../templates/chauffeurWelcomeEmail');
+const { normalizeEmail } = require('../utils/normalizeCredentials');
 const prisma = new PrismaClient();
 
 // Créer un nouveau chauffeur (version corrigée selon le schéma Prisma)
@@ -9,7 +11,8 @@ async function createChauffeur(req, res) {
   try {
     console.log(' Création chauffeur - Données reçues:', req.body);
     
-    const { nom, postnom, prenom, email, telephone, sexe } = req.body;
+    const { nom, postnom, prenom, telephone, sexe } = req.body;
+    const email = normalizeEmail(req.body.email);
     
     // Validation des données selon le schéma Prisma
     if (!nom || !postnom || !prenom || !email || !telephone || !sexe) {
@@ -20,8 +23,8 @@ async function createChauffeur(req, res) {
     }
     
     // Vérifier si l'email existe déjà
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
     
     if (existingUser) {
@@ -68,32 +71,8 @@ async function createChauffeur(req, res) {
     const mailOptions = {
       to: email,
       subject: 'Vos identifiants de connexion - Airfawers Auto',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">🚗 Bienvenue chez Airfawers Auto !</h2>
-          <p>Bonjour ${prenom} ${nom},</p>
-          <p>Votre compte chauffeur a été créé avec succès par l'administrateur.</p>
-          
-          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #059669; margin: 0;">🔐 Vos identifiants de connexion</h3>
-            <div style="background-color: white; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #2563eb;">
-              <p style="margin: 5px 0;"><strong>📧 Email :</strong> ${email}</p>
-              <p style="margin: 5px 0;"><strong>🔑 Mot de passe :</strong> <span style="font-family: monospace; font-size: 16px; color: #2563eb; font-weight: bold;">${password}</span></p>
-            </div>
-          </div>
-          
-          <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-            <p style="margin: 0; color: #92400e;"><strong>⚠️ Important :</strong> Conservez précieusement ces informations de connexion.</p>
-          </div>
-          
-          <p>Vous pouvez maintenant vous connecter à votre espace chauffeur en utilisant ces identifiants.</p>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-          <p style="color: #6b7280; font-size: 12px;">
-            Cordialement,<br>L'équipe Airfawers Auto
-          </p>
-        </div>
-      `
+      html: buildChauffeurWelcomeEmailHtml({ prenom, nom, email, password }),
+      text: buildChauffeurWelcomeEmailText({ prenom, nom, email, password }),
     };
     
     let emailSent = false;

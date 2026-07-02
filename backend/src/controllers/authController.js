@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendMail } = require('../config/email');
+const { buildChauffeurWelcomeEmailHtml, buildChauffeurWelcomeEmailText } = require('../templates/chauffeurWelcomeEmail');
+const { normalizeEmail, normalizePassword } = require('../utils/normalizeCredentials');
 const prisma = new PrismaClient();
 
 // Authentification Admin
@@ -50,7 +52,8 @@ async function loginAdmin(req, res) {
 // Authentification Chauffeur
 async function loginChauffeur(req, res) {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const password = normalizePassword(req.body.password);
     
     console.log('🔐 Tentative de connexion chauffeur:', { email, passwordLength: password?.length });
     
@@ -62,9 +65,11 @@ async function loginChauffeur(req, res) {
       });
     }
     
-    // Trouver l'utilisateur par email
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Trouver l'utilisateur par email (insensible à la casse)
+    const user = await prisma.user.findFirst({
+      where: {
+        email: { equals: email, mode: 'insensitive' },
+      },
       include: {
         chauffeur: true
       }
@@ -99,16 +104,7 @@ async function loginChauffeur(req, res) {
       });
     }
     
-    // Vérifier si le mot de passe est défini
-    if (!user.motDePasseDefini) {
-      console.log('⚠️ Mot de passe non défini pour:', email);
-      return res.status(400).json({
-        success: false,
-        message: 'Mot de passe non défini. Veuillez d\'abord définir votre mot de passe.'
-      });
-    }
-    
-    // Vérifier le mot de passe - Utiliser motDePasse selon le schéma Prisma
+    // Vérifier le mot de passe
     const isValidPassword = await bcrypt.compare(password, user.motDePasse);
     
     console.log('🔑 Vérification mot de passe:', { isValidPassword });
@@ -119,6 +115,19 @@ async function loginChauffeur(req, res) {
         success: false,
         message: 'Email ou mot de passe incorrect'
       });
+    }
+
+    // Comptes legacy : mot de passe temporaire hashé mais motDePasseDefini encore à false
+    if (!user.motDePasseDefini) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          motDePasseDefini: true,
+          doitChangerMotDePasse: true,
+        },
+      });
+      user.motDePasseDefini = true;
+      user.doitChangerMotDePasse = true;
     }
     
     console.log('✅ Connexion réussie pour:', email);
@@ -167,7 +176,8 @@ async function createChauffeurAccount(req, res) {
   try {
     console.log(' Création chauffeur - Données reçues:', req.body);
     
-    const { nom, postnom, prenom, email, telephone, sexe } = req.body;
+    const { nom, postnom, prenom, telephone, sexe } = req.body;
+    const email = normalizeEmail(req.body.email);
     
     // Validation des données selon le schéma Prisma
     if (!nom || !postnom || !prenom || !email || !telephone || !sexe) {
@@ -178,8 +188,8 @@ async function createChauffeurAccount(req, res) {
     }
     
     // Vérifier si l'email existe déjà
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
     
     if (existingUser) {
@@ -226,32 +236,8 @@ async function createChauffeurAccount(req, res) {
     const mailOptions = {
       to: email,
       subject: 'Vos identifiants de connexion - Airfawers Auto',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">🚗 Bienvenue chez Airfawers Auto !</h2>
-          <p>Bonjour ${prenom} ${nom},</p>
-          <p>Votre compte chauffeur a été créé avec succès par l'administrateur.</p>
-          
-          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #059669; margin: 0;">🔐 Vos identifiants de connexion</h3>
-            <div style="background-color: white; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #2563eb;">
-              <p style="margin: 5px 0;"><strong>📧 Email :</strong> ${email}</p>
-              <p style="margin: 5px 0;"><strong>🔑 Mot de passe :</strong> <span style="font-family: monospace; font-size: 16px; color: #2563eb; font-weight: bold;">${password}</span></p>
-            </div>
-          </div>
-          
-          <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-            <p style="margin: 0; color: #92400e;"><strong>⚠️ Important :</strong> Conservez précieusement ces informations de connexion.</p>
-          </div>
-          
-          <p>Vous pouvez maintenant vous connecter à votre espace chauffeur en utilisant ces identifiants.</p>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-          <p style="color: #6b7280; font-size: 12px;">
-            Cordialement,<br>L'équipe Airfawers Auto
-          </p>
-        </div>
-      `
+      html: buildChauffeurWelcomeEmailHtml({ prenom, nom, email, password }),
+      text: buildChauffeurWelcomeEmailText({ prenom, nom, email, password }),
     };
     
     let emailSent = false;

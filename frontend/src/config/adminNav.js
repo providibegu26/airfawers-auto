@@ -49,3 +49,13 @@ export function getAdminPageTitle(pathname) {
 
   return match ? match[1] : "FleetTech";
 }
+
+/** Routes admin au design mobile-first (aligné sur l’espace chauffeur). */
+export const ADMIN_MOBILE_FIRST_ROUTES = [
+  "/admin/notifications",
+  "/admin/profile-admin",
+];
+
+export function isAdminMobileFirstRoute(pathname) {
+  return ADMIN_MOBILE_FIRST_ROUTES.includes(pathname);
+}

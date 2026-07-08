@@ -5,13 +5,14 @@ import {
   FaTools,
   FaCar,
   FaSpinner,
+  FaCheckCircle,
 } from "react-icons/fa";
 import StatusBadge from "../../components/UI/StatusBadge";
 import {
   fetchChauffeurProfile,
   vehicleToCalendarFormat,
 } from "../../services/chauffeurProfileService";
-import { generateCalendarData } from "../../services/maintenanceService";
+import { generateCalendarData, fetchChauffeurPlannedMaintenances } from "../../services/maintenanceService";
 
 const MONTH_NAMES = [
   "Janvier",
@@ -57,6 +58,7 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
   const [selectedDate, setSelectedDate] = useState(
     () => new Date().toISOString().slice(0, 10)
   );
+  const [plannedMaintenances, setPlannedMaintenances] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,9 +67,13 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
       setLoading(true);
       setError("");
       try {
-        const profile = await fetchChauffeurProfile();
+        const [profile, planned] = await Promise.all([
+          fetchChauffeurProfile(),
+          fetchChauffeurPlannedMaintenances().catch(() => []),
+        ]);
         if (!cancelled) {
           setVehicle(profile.vehicule || null);
+          setPlannedMaintenances(planned);
         }
       } catch (e) {
         if (!cancelled) {
@@ -98,10 +104,25 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
   const dateMap = useMemo(() => {
     const map = {};
     calendarEntries.forEach(({ date, entretiens }) => {
-      map[date] = entretiens;
+      map[date] = entretiens.map((e) => ({ ...e, isPlanned: false }));
     });
+
+    plannedMaintenances.forEach((plan) => {
+      const dateKey = new Date(plan.datePrevue).toISOString().slice(0, 10);
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push({
+        typeLabel: plan.typeLabel || plan.type,
+        daysRemaining: 0,
+        isPlanned: true,
+        colorStatus: "indigo",
+      });
+    });
+
     return map;
-  }, [calendarEntries]);
+  }, [calendarEntries, plannedMaintenances]);
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const selectedEntretiens = dateMap[selectedDate] || [];
 
   const days = Array.from(
     { length: new Date(currentYear, currentMonth + 1, 0).getDate() },
@@ -109,9 +130,6 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
   );
   const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
   const blanks = Array((firstDayOfWeek + 6) % 7).fill(null);
-
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const selectedEntretiens = dateMap[selectedDate] || [];
 
   const goToPreviousMonth = () => {
     if (currentMonth === 0) {
@@ -215,7 +233,8 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
             const entretiens = dateMap[iso] || [];
             const isToday = iso === todayIso;
             const isSelected = iso === selectedDate;
-            const urgent = entretiens.some((e) => e.daysRemaining <= 7);
+            const urgent = entretiens.some((e) => !e.isPlanned && e.daysRemaining <= 7);
+            const hasPlanned = entretiens.some((e) => e.isPlanned);
 
             return (
               <button
@@ -225,6 +244,8 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
                 className={`relative flex h-10 flex-col items-center justify-center rounded-xl text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                   isSelected
                     ? "bg-slate-900 font-semibold text-white"
+                    : hasPlanned
+                      ? "bg-indigo-50 font-medium text-indigo-800 ring-1 ring-indigo-200"
                     : isToday
                       ? "font-semibold text-indigo-600 ring-1 ring-indigo-200"
                       : "text-slate-700 hover:bg-slate-50"
@@ -237,7 +258,11 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
                       <span
                         key={idx}
                         className={`h-1 w-1 rounded-full ${
-                          isSelected ? "bg-white" : dotColor(e.daysRemaining)
+                          isSelected
+                            ? "bg-white"
+                            : e.isPlanned
+                              ? "bg-indigo-600"
+                              : dotColor(e.daysRemaining)
                         }`}
                       />
                     ))}
@@ -291,14 +316,24 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
             {selectedEntretiens.map((entretien, index) => (
               <li
                 key={index}
-                className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3"
+                className={`flex items-start gap-3 rounded-xl border p-3 ${
+                  entretien.isPlanned
+                    ? "border-indigo-200 bg-indigo-50/80"
+                    : "border-slate-100 bg-slate-50/80"
+                }`}
               >
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${typeIconBg(
-                    entretien.daysRemaining
-                  )}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    entretien.isPlanned
+                      ? "bg-indigo-100 text-indigo-600"
+                      : typeIconBg(entretien.daysRemaining)
+                  }`}
                 >
-                  <FaTools className="h-4 w-4" />
+                  {entretien.isPlanned ? (
+                    <FaCheckCircle className="h-4 w-4" />
+                  ) : (
+                    <FaTools className="h-4 w-4" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
@@ -306,21 +341,30 @@ const ChauffeurMaintenanceCalendar = ({ compact = false }) => {
                       {entretien.typeLabel}
                     </p>
                     <StatusBadge
-                      variant={urgencyVariant(entretien.daysRemaining)}
+                      variant={entretien.isPlanned ? "info" : urgencyVariant(entretien.daysRemaining)}
                       label={
-                        entretien.daysRemaining <= 0
-                          ? "En retard"
-                          : `${entretien.daysRemaining} j`
+                        entretien.isPlanned
+                          ? "Planifié"
+                          : entretien.daysRemaining <= 0
+                            ? "En retard"
+                            : `${entretien.daysRemaining} j`
                       }
                     />
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {vehicle.marque} {vehicle.modele}
                   </p>
-                  <p className="mt-1 text-xs tabular-nums text-slate-400">
-                    Dans {entretien.daysRemaining} jour
-                    {entretien.daysRemaining > 1 ? "s" : ""}
-                  </p>
+                  {!entretien.isPlanned && (
+                    <p className="mt-1 text-xs tabular-nums text-slate-400">
+                      Dans {entretien.daysRemaining} jour
+                      {entretien.daysRemaining > 1 ? "s" : ""}
+                    </p>
+                  )}
+                  {entretien.isPlanned && (
+                    <p className="mt-1 text-xs text-indigo-600">
+                      Date confirmée par l&apos;administrateur
+                    </p>
+                  )}
                 </div>
               </li>
             ))}

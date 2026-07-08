@@ -7,6 +7,7 @@ const UI_TYPE_MAP = {
   MILEAGE_UPDATED: 'info',
   MILEAGE_WINDOW_OPEN: 'warning',
   MAINTENANCE_SCHEDULED: 'warning',
+  MAINTENANCE_PLANNED: 'info',
   MAINTENANCE_URGENT: 'urgent',
   BREAKDOWN_REPORTED: 'urgent',
 };

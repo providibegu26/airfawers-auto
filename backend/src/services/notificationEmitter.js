@@ -169,6 +169,68 @@ async function notifyMileageUpdated(vehicule, chauffeur, newMileage) {
   });
 }
 
+async function notifyMaintenancePlanned(vehicule, type, datePrevue) {
+  const label = MAINTENANCE_LABELS[type] || type;
+  const dateLabel = new Date(datePrevue).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  if (vehicule?.chauffeurId) {
+    const chauffeur = vehicule.chauffeur || await prisma.chauffeur.findUnique({
+      where: { id: vehicule.chauffeurId },
+      include: { user: { select: { email: true } } },
+    });
+
+    await notifyChauffeurById(vehicule.chauffeurId, {
+      type: 'MAINTENANCE_PLANNED',
+      titre: 'Entretien planifié',
+      message: `L'entretien ${label} de votre véhicule ${vehicule.immatriculation} est prévu le ${dateLabel}.`,
+      payload: {
+        vehiculeId: vehicule.id,
+        immatriculation: vehicule.immatriculation,
+        maintenanceType: type,
+        datePrevue: datePrevue.toISOString(),
+      },
+    });
+
+    if (chauffeur?.user?.email) {
+      const { sendMail } = require('../config/email');
+      const {
+        buildMaintenancePlannedEmailHtml,
+        buildMaintenancePlannedEmailText,
+      } = require('../templates/maintenancePlannedEmail');
+
+      try {
+        await sendMail({
+          to: chauffeur.user.email,
+          subject: `Entretien planifié — ${vehicule.immatriculation}`,
+          html: buildMaintenancePlannedEmailHtml({
+            prenom: chauffeur.prenom,
+            nom: chauffeur.nom,
+            immatriculation: vehicule.immatriculation,
+            typeLabel: label,
+            datePrevue,
+          }),
+          text: buildMaintenancePlannedEmailText({
+            prenom: chauffeur.prenom,
+            nom: chauffeur.nom,
+            immatriculation: vehicule.immatriculation,
+            typeLabel: label,
+            datePrevue,
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Erreur email planification entretien:', emailErr);
+      }
+    }
+  }
+
+  return null;
+}
+
 module.exports = {
   createNotification,
   notifyChauffeurById,
@@ -180,4 +242,5 @@ module.exports = {
   notifyFuelCollected,
   notifyMileageWindowOpened,
   notifyMileageUpdated,
+  notifyMaintenancePlanned,
 };

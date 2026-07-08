@@ -64,8 +64,26 @@ model Vehicule {
   confirmationsRecuperation ConfirmationRecuperationCarburant[]
   pannes          Panne[]
   saisiesKilometrageChauffeur SaisieKilometrageChauffeur[]
+  entretiensPlanifies EntretienPlanifie[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now())
+}
+
+model EntretienPlanifie {
+  id          Int      @id @default(autoincrement())
+  vehiculeId  Int
+  vehicule    Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  type        String   // vidange | categorie_b | categorie_c
+  datePrevue  DateTime
+  seuilKm     Int
+  statut      String   @default("planifie") // planifie | realise | annule
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([vehiculeId, type, seuilKm])
+  @@index([datePrevue])
+  @@index([statut])
 }
 
 model FenetreMiseAJourKilometrage {

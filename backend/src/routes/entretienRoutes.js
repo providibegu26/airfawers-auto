@@ -7,6 +7,18 @@ const {
   deleteMaintenance,
   clearAllMaintenance
 } = require('../controllers/entretienController');
+const {
+  listPlannedMaintenances,
+  planMaintenance,
+  cancelPlannedMaintenance,
+  getSchedulingCandidates,
+} = require('../controllers/planningController');
+
+// Planification des entretiens
+router.get('/planifies', listPlannedMaintenances);
+router.get('/planifier/candidates', getSchedulingCandidates);
+router.post('/planifier', planMaintenance);
+router.delete('/planifier/:id', cancelPlannedMaintenance);
 
 // Valider un entretien
 router.post('/validate', validateMaintenance);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaOilCan,
@@ -9,6 +9,7 @@ import {
   FaCalendarAlt,
   FaTools,
   FaChevronRight,
+  FaCalendarCheck,
 } from "react-icons/fa";
 import MileageModal from "../components/Entretiens/MileageModal";
 import MileageWindowPanel from "../components/Entretiens/MileageWindowPanel";
@@ -22,6 +23,8 @@ import { useMaintenanceVehicles } from "../hooks/useMaintenanceVehicles";
 import {
   countCategoryMaintenance,
   getUrgentMaintenance,
+  getMaintenanceToSchedule,
+  fetchPlannedMaintenances,
   updateVehicleMileage,
   fetchVehicles,
 } from "../services/maintenanceService";
@@ -87,6 +90,13 @@ const Entretiens = () => {
   const { vehicles, setVehicles, loading, error } = useMaintenanceVehicles();
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [plannedMaintenances, setPlannedMaintenances] = useState([]);
+
+  useEffect(() => {
+    fetchPlannedMaintenances("planifie")
+      .then(setPlannedMaintenances)
+      .catch(() => setPlannedMaintenances([]));
+  }, [vehicles]);
 
   const showToast = (message, type) => {
     setNotification({ message, type });
@@ -106,6 +116,7 @@ const Entretiens = () => {
   };
 
   const urgentCount = getCount("urgent");
+  const toScheduleCount = getMaintenanceToSchedule(vehicles, plannedMaintenances).length;
   const totalPlanned =
     getCount("vidange") +
     getCount("categorie_b") +
@@ -119,8 +130,8 @@ const Entretiens = () => {
           subtitle="Planification et suivi des maintenances par catégorie"
           icon={FaTools}
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className="h-24 animate-pulse rounded-xl border border-slate-200 bg-white"
@@ -180,7 +191,7 @@ const Entretiens = () => {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Véhicules suivis"
           value={vehicles.length}
@@ -189,7 +200,15 @@ const Entretiens = () => {
           accent="indigo"
         />
         <KpiCard
-          label="Entretiens planifiés"
+          label="À planifier"
+          value={toScheduleCount}
+          hint={toScheduleCount > 0 ? "Date obligatoire (≤ 14 j)" : "Tout est planifié"}
+          icon={FaCalendarCheck}
+          accent={toScheduleCount > 0 ? "amber" : "emerald"}
+          hintClassName={toScheduleCount > 0 ? "text-amber-600" : "text-emerald-600"}
+        />
+        <KpiCard
+          label="Entretiens prévus"
           value={totalPlanned}
           hint="Hors urgences immédiates"
           icon={FaTools}
@@ -206,6 +225,29 @@ const Entretiens = () => {
           }
         />
       </div>
+
+      {toScheduleCount > 0 && (
+        <button
+          type="button"
+          onClick={() => navigate("/admin/maintenance-calendar")}
+          className="flex w-full items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-left transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+              <FaCalendarCheck className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-indigo-900">
+                {toScheduleCount} entretien{toScheduleCount > 1 ? "s" : ""} à planifier
+              </p>
+              <p className="text-xs text-indigo-700">
+                Échéance dans les 14 prochains jours — fixez une date sur le calendrier
+              </p>
+            </div>
+          </div>
+          <FaChevronRight className="h-4 w-4 shrink-0 text-indigo-500" />
+        </button>
+      )}
 
       {urgentCount > 0 && (
         <button

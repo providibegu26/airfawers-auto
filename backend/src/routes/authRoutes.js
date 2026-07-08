@@ -8,6 +8,7 @@ const {
   personalizeChauffeurPassword,
 } = require('../controllers/authController');
 const { authenticateToken, requireChauffeur } = require('../middleware/auth');
+const { listChauffeurPlannedMaintenances } = require('../controllers/planningController');
 
 // Route de connexion admin
 router.post('/admin/login', loginAdmin);
@@ -20,6 +21,13 @@ router.post('/chauffeur/create', createChauffeurAccount);
 
 // Route pour récupérer le profil du chauffeur connecté (protégée)
 router.get('/chauffeur/profile', authenticateToken, requireChauffeur, getChauffeurProfile);
+
+router.get(
+  '/chauffeur/entretiens/planifies',
+  authenticateToken,
+  requireChauffeur,
+  listChauffeurPlannedMaintenances
+);
 
 // Personnalisation du mot de passe après première connexion
 router.post(

@@ -102,6 +102,9 @@ class ChauffeurNotificationService {
   }
 
   getTypeLabel(type) {
+    if (type === "MAINTENANCE_PLANNED" || type === "maintenance_planned") {
+      return "Entretien planifié";
+    }
     switch (type) {
       case "vidange":
         return "Catégorie A";

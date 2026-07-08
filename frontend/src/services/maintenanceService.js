@@ -1,6 +1,9 @@
 import { apiPath } from "@/config/api";
 
-// Seuils d'entretien par catégorie de véhicule (en kilomètres)
+export const PLANNING_WINDOW_MAX_DAYS = 14;
+export const DATE_TOLERANCE_DAYS = 5;
+
+const MAINTENANCE_TYPES_ORDER = ['vidange', 'categorie_b', 'categorie_c'];
 export const maintenanceThresholds = {
   HEAVY: {
     vidange: 8000,
@@ -427,4 +430,161 @@ export function formatMaintenanceCountdownLong(days) {
   if (days === 0) return "Prévu aujourd'hui";
   if (days === 1) return "Dans 1 jour";
   return `Dans ${days} jours`;
+}
+
+// --- Planification des entretiens ---
+
+export function isDueForPlanning(daysRemaining) {
+  return daysRemaining !== undefined && daysRemaining !== null && daysRemaining <= PLANNING_WINDOW_MAX_DAYS;
+}
+
+export function getEstimatedMaintenanceDate(daysRemaining) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + daysRemaining);
+  return d;
+}
+
+export function daysBetweenDates(dateA, dateB) {
+  const a = new Date(dateA);
+  const b = new Date(dateB);
+  a.setHours(0, 0, 0, 0);
+  b.setHours(0, 0, 0, 0);
+  return Math.round((b - a) / (24 * 60 * 60 * 1000));
+}
+
+export function isDateWithinPlanningTolerance(chosenDate, daysRemaining, tolerance = DATE_TOLERANCE_DAYS) {
+  const estimated = getEstimatedMaintenanceDate(daysRemaining);
+  return Math.abs(daysBetweenDates(chosenDate, estimated)) <= tolerance;
+}
+
+export function getNextMaintenanceToPlan(vehicle, activePlans = []) {
+  if (!vehicle) return null;
+
+  const plansForVehicle = activePlans.filter(
+    (p) => p.vehiculeId === vehicle.id && p.statut === 'planifie'
+  );
+
+  for (const type of MAINTENANCE_TYPES_ORDER) {
+    const daysRemaining = vehicle[`${type}DaysRemaining`];
+    if (!isDueForPlanning(daysRemaining)) continue;
+
+    const seuilKm = vehicle[`${type}NextThreshold`];
+    const existingPlan = plansForVehicle.find(
+      (p) => p.type === type && p.seuilKm === seuilKm
+    );
+
+    if (existingPlan) return null;
+
+    return {
+      type,
+      typeLabel: MAINTENANCE_TYPE_LABELS[type],
+      daysRemaining,
+      nextThreshold: seuilKm,
+      estimatedDate: getEstimatedMaintenanceDate(daysRemaining),
+    };
+  }
+
+  return null;
+}
+
+export function getMaintenanceToSchedule(vehicles, activePlans = []) {
+  const items = [];
+
+  vehicles.forEach((vehicle) => {
+    const next = getNextMaintenanceToPlan(vehicle, activePlans);
+    if (!next) return;
+
+    items.push({
+      vehicle,
+      ...next,
+    });
+  });
+
+  return items.sort((a, b) => a.daysRemaining - b.daysRemaining);
+}
+
+export async function fetchPlannedMaintenances(statut = 'planifie') {
+  const response = await fetch(apiPath(`/admin/entretiens/planifies?statut=${statut}`));
+  if (!response.ok) throw new Error('Erreur lors du chargement des planifications');
+  const data = await response.json();
+  return data.planifies || [];
+}
+
+export async function fetchSchedulingCandidates(date) {
+  const params = date ? `?date=${date}` : '';
+  const response = await fetch(apiPath(`/admin/entretiens/planifier/candidates${params}`));
+  if (!response.ok) throw new Error('Erreur lors du chargement des candidats');
+  return response.json();
+}
+
+export async function planMaintenances(datePrevue, items) {
+  const response = await fetch(apiPath('/admin/entretiens/planifier'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ datePrevue, items }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.errors?.[0]?.error || 'Erreur lors de la planification');
+  }
+  return data;
+}
+
+export async function cancelPlannedMaintenance(id) {
+  const response = await fetch(apiPath(`/admin/entretiens/planifier/${id}`), {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Erreur lors de l\'annulation');
+  return response.json();
+}
+
+export async function fetchChauffeurPlannedMaintenances() {
+  const token = localStorage.getItem('chauffeurToken');
+  const response = await fetch(apiPath('/auth/chauffeur/entretiens/planifies'), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) throw new Error('Erreur chargement planifications');
+  const data = await response.json();
+  return data.planifies || [];
+}
+
+export function mergeCalendarWithPlanned(vehicles, plannedMaintenances = [], daysWindow = 60) {
+  const estimatedData = generateCalendarData(vehicles, null, null, daysWindow);
+  const dateMap = {};
+
+  estimatedData.forEach(({ date, entretiens }) => {
+    dateMap[date] = {
+      date,
+      estimated: entretiens.map((e) => ({ ...e, layer: 'estimated' })),
+      planned: [],
+    };
+  });
+
+  plannedMaintenances
+    .filter((p) => p.statut === 'planifie')
+    .forEach((plan) => {
+      const dateKey = new Date(plan.datePrevue).toISOString().slice(0, 10);
+      if (!dateMap[dateKey]) {
+        dateMap[dateKey] = { date: dateKey, estimated: [], planned: [] };
+      }
+
+      const vehicle = plan.vehicule || vehicles.find((v) => v.id === plan.vehiculeId);
+      dateMap[dateKey].planned.push({
+        id: plan.id,
+        type: plan.type,
+        typeLabel: MAINTENANCE_TYPE_LABELS[plan.type] || plan.type,
+        immatriculation: vehicle?.immatriculation || '—',
+        marque: vehicle?.marque,
+        modele: vehicle?.modele,
+        chauffeur: vehicle?.chauffeur
+          ? `${vehicle.chauffeur.nom} ${vehicle.chauffeur.prenom}`
+          : 'Non attribué',
+        layer: 'planned',
+        datePrevue: plan.datePrevue,
+      });
+    });
+
+  return Object.values(dateMap).sort((a, b) => new Date(a.date) - new Date(b.date));
 }

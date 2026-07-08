@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { notifyMaintenanceRecorded } = require('../services/notificationEmitter');
+const { markPlannedAsRealised } = require('./planningController');
 const prisma = new PrismaClient();
 
 // Valider un entretien et le sauvegarder en base
@@ -42,6 +43,7 @@ async function validateMaintenance(req, res) {
     console.log(' Entretien sauvegardé:', entretien);
 
     await notifyMaintenanceRecorded(vehicule, type);
+    await markPlannedAsRealised(vehiculeId, type);
 
     // Recalculer les estimations pour ce véhicule
     console.log(' Recalcul des estimations après validation...');

@@ -11,11 +11,11 @@ import PageHeader from "../components/UI/PageHeader";
 import Button from "../components/UI/Button";
 import Card from "../components/UI/Card";
 import SearchBar from "../components/common/SearchBar";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API_VEHICULES = apiPath("/admin/vehicules");
-const API_HISTORIQUE = apiPath("/admin/carburant/historique/global");
-const API_RAPPORTS = apiPath("/admin/carburant/rapports?periode=monthly");
+const API_VEHICULES = "/admin/vehicules";
+const API_HISTORIQUE = "/admin/carburant/historique/global";
+const API_RAPPORTS = "/admin/carburant/rapports?periode=monthly";
 
 const Carburants = () => {
   const [showModal, setShowModal] = useState(false);
@@ -33,14 +33,14 @@ const Carburants = () => {
   const [vehicleHistory, setVehicleHistory] = useState([]);
 
   const fetchVehicles = async () => {
-    const response = await fetch(API_VEHICULES);
+    const response = await adminFetch(API_VEHICULES);
     if (!response.ok) throw new Error("Erreur lors de la récupération des véhicules");
     const data = await response.json();
     setVehicles(data.vehicules || []);
   };
 
   const fetchLastAttributions = async () => {
-    const res = await fetch(API_HISTORIQUE);
+    const res = await adminFetch(API_HISTORIQUE);
     if (!res.ok) return;
     const data = await res.json();
     const map = {};
@@ -53,7 +53,7 @@ const Carburants = () => {
   };
 
   const fetchMonthlyCost = async () => {
-    const res = await fetch(API_RAPPORTS);
+    const res = await adminFetch(API_RAPPORTS);
     if (!res.ok) return;
     const data = await res.json();
     const now = new Date();
@@ -105,7 +105,7 @@ const Carburants = () => {
   );
 
   const openGlobalHistory = async () => {
-    const res = await fetch(API_HISTORIQUE);
+    const res = await adminFetch(API_HISTORIQUE);
     if (!res.ok) return;
     const data = await res.json();
     setGlobalHistory(data.attributions || []);
@@ -113,8 +113,8 @@ const Carburants = () => {
   };
 
   const handleRowClick = async (vehicle) => {
-    const res = await fetch(
-      apiPath(`/admin/carburant/historique/vehicule/${vehicle.id}`)
+    const res = await adminFetch(
+      `/admin/carburant/historique/vehicule/${vehicle.id}`
     );
     const data = await res.json();
     setVehicleHistory(data.attributions || []);

@@ -29,6 +29,7 @@ const Sidebar = ({ closeSidebar, sidebarOpen, onToggleCollapse }) => {
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminUser");
+    localStorage.removeItem("adminInfo");
     navigate("/admin/login");
   };
 

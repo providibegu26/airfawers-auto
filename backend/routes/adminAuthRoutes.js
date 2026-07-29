@@ -6,18 +6,16 @@ const {
   changePassword,
   updateProfile,
   logout,
-  createAdmin,
-  authenticateToken
 } = require('../controllers/adminAuthController');
+const { authenticateToken, requireAdmin } = require('../src/middleware/auth');
 
-// Routes publiques (pas besoin d'authentification)
+// Public — login uniquement
 router.post('/login', login);
-router.post('/create', createAdmin); // Pour l'initialisation
 
-// Routes protégées (nécessitent un token valide)
-router.get('/verify', authenticateToken, verify);
-router.post('/change-password', authenticateToken, changePassword);
-router.put('/profile', authenticateToken, updateProfile);
-router.post('/logout', authenticateToken, logout);
+// Protégées — JWT admin requis
+router.get('/verify', authenticateToken, requireAdmin, verify);
+router.post('/change-password', authenticateToken, requireAdmin, changePassword);
+router.put('/profile', authenticateToken, requireAdmin, updateProfile);
+router.post('/logout', authenticateToken, requireAdmin, logout);
 
-module.exports = router; 
+module.exports = router;

@@ -4,9 +4,9 @@ import Card from "../UI/Card";
 import DataTable from "../UI/DataTable";
 import EmptyState from "../UI/EmptyState";
 import SearchBar from "../common/SearchBar";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API = apiPath("/admin");
+const API = "/admin";
 
 const DriversList = () => {
   const [drivers, setDrivers] = useState([]);
@@ -21,8 +21,8 @@ const DriversList = () => {
       setLoading(true);
       try {
         const [driversRes, vehiclesRes] = await Promise.all([
-          fetch(`${API}/chauffeurs`).then((r) => r.json()),
-          fetch(`${API}/vehicules`).then((r) => r.json()),
+          adminFetch(`${API}/chauffeurs`).then((r) => r.json()),
+          adminFetch(`${API}/vehicules`).then((r) => r.json()),
         ]);
         if (!cancelled) {
           setDrivers(driversRes.chauffeurs || []);

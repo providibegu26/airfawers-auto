@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { FaUserTie } from "react-icons/fa";
 import Modal from "../UI/Modal";
 import Button from "../UI/Button";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
@@ -15,10 +15,10 @@ export const AssignDriverModal = ({ isOpen, vehicle, onClose, onAssign }) => {
 
   useEffect(() => {
     if (isOpen) {
-      fetch(apiPath("/admin/chauffeurs"))
+      adminFetch("/admin/chauffeurs")
         .then((res) => res.json())
         .then((data) => {
-          fetch(apiPath("/admin/vehicules"))
+          adminFetch("/admin/vehicules")
             .then((res2) => res2.json())
             .then((data2) => {
               const vehicules = data2.vehicules || [];

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExportMenu from '../components/UI/ExportMenu';
 import { downloadCsv, downloadPdf } from '../utils/exportData';
-import { apiPath } from '@/config/api';
+import { adminFetch } from '@/config/adminApi';
 
 const EXPORT_HEADERS = ['Date', 'Immatriculation', 'Véhicule', 'Quantité (L)', 'Coût (FC)'];
 
@@ -27,8 +27,8 @@ export default function FuelHistory() {
     try {
       setLoading(true);
       const [hRes, vRes] = await Promise.all([
-        fetch(apiPath('/admin/carburant/historique/global')),
-        fetch(apiPath('/admin/vehicules'))
+        adminFetch('/admin/carburant/historique/global'),
+        adminFetch('/admin/vehicules')
       ]);
       const hData = await hRes.json();
       const vData = await vRes.json();

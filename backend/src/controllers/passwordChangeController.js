@@ -91,8 +91,7 @@ async function requestPasswordChange(req, res) {
       emailSent = true;
       console.log(`📧 Code de changement de mot de passe envoyé à ${email}`);
     } catch (emailError) {
-      console.log(`⚠️ Erreur email, code affiché dans la console: ${code}`);
-      console.error('Erreur email:', emailError);
+      console.error('Erreur email (code non journalisé):', emailError.message);
     }
 
     return res.status(200).json({

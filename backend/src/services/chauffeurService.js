@@ -40,11 +40,13 @@ async function createChauffeurService({ nom, postnom, prenom, sexe, telephone, e
     },
     include: { chauffeur: true },
   });
-  
-  // Retourner les informations avec le mot de passe temporaire
+
+  // Le mot de passe temporaire n'est jamais renvoyé à l'appelant API
   return {
-    ...user,
-    motDePasseTemporaire // Pour que l'admin puisse le communiquer au chauffeur
+    id: user.id,
+    email: user.email,
+    chauffeur: user.chauffeur,
+    motDePasseTemporaire, // usage interne uniquement (email), pas pour JSON API
   };
 }
 

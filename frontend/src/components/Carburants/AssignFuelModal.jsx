@@ -2,7 +2,7 @@ import { FaCheck, FaGasPump } from "react-icons/fa";
 import { useState, useMemo } from "react";
 import Modal from "../UI/Modal";
 import Button from "../UI/Button";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 import { getFuelLabel, getPrixLitre } from "@/config/fuelPrices";
 
 const inputClass =
@@ -51,9 +51,8 @@ const AssignFuelModal = ({ show, onClose, vehicle, onSuccess }) => {
         notes: null,
       };
 
-      const res = await fetch(apiPath("/admin/carburant/attribuer"), {
+      const res = await adminFetch("/admin/carburant/attribuer", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 

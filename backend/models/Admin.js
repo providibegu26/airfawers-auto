@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../src/middleware/auth');
+const { sanitizeAdmin } = require('../src/utils/sanitizeAdmin');
 
 const prisma = new PrismaClient();
 
@@ -22,7 +24,7 @@ class Admin {
         }
       });
       
-      return { success: true, admin: { ...admin, password: undefined } };
+      return { success: true, admin: sanitizeAdmin(admin) };
     } catch (error) {
       console.error('Erreur création admin:', error);
       return { success: false, error: 'Erreur lors de la création de l\'admin' };
@@ -45,29 +47,19 @@ class Admin {
         return { success: false, error: 'Email ou mot de passe incorrect' };
       }
 
-      // Générer le token JWT
       const token = jwt.sign(
-        { 
-          id: admin.id, 
+        {
+          id: admin.id,
           email: admin.email,
-          isFirstLogin: admin.isFirstLogin 
+          role: 'admin',
         },
-        process.env.JWT_SECRET || 'your-secret-key',
+        getJwtSecret(),
         { expiresIn: '24h' }
       );
 
       return {
         success: true,
-        admin: {
-          id: admin.id,
-          email: admin.email,
-          nom: admin.nom,
-          prenom: admin.prenom,
-          postNom: admin.postNom,
-          telephone: admin.telephone,
-          photo: admin.photo,
-          isFirstLogin: admin.isFirstLogin
-        },
+        admin: sanitizeAdmin(admin),
         token
       };
     } catch (error) {
@@ -79,9 +71,19 @@ class Admin {
   // Vérifier un token
   static async verifyToken(token) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const decoded = jwt.verify(token, getJwtSecret());
       const admin = await prisma.admin.findUnique({
-        where: { id: decoded.id }
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          email: true,
+          nom: true,
+          prenom: true,
+          postNom: true,
+          telephone: true,
+          photo: true,
+          isFirstLogin: true,
+        },
       });
 
       if (!admin) {
@@ -90,16 +92,7 @@ class Admin {
 
       return {
         success: true,
-        admin: {
-          id: admin.id,
-          email: admin.email,
-          nom: admin.nom,
-          prenom: admin.prenom,
-          postNom: admin.postNom,
-          telephone: admin.telephone,
-          photo: admin.photo,
-          isFirstLogin: admin.isFirstLogin
-        }
+        admin,
       };
     } catch (error) {
       console.error('Erreur vérification token:', error);

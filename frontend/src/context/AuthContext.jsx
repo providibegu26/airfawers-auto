@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiPath } from '@/config/api';
+import { adminFetch } from '@/config/adminApi';
 
 const AuthContext = createContext();
 
@@ -16,13 +17,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Vérifier l'authentification au chargement
   useEffect(() => {
     const checkAuth = () => {
       try {
         const token = localStorage.getItem('adminToken');
-        const adminInfo = localStorage.getItem('adminInfo');
-        
+        const adminInfo =
+          localStorage.getItem('adminInfo') ||
+          localStorage.getItem('adminUser');
+
         if (token && adminInfo) {
           const adminData = JSON.parse(adminInfo);
           setAdmin(adminData);
@@ -43,7 +45,6 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  // Login
   const login = async (email, password) => {
     try {
       const response = await fetch(apiPath('/admin/auth/login'), {
@@ -51,35 +52,46 @@ export const AuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
-      
-      if (data.success) {
+
+      if (data.success && data.token) {
+        const adminUser = data.user || {
+          id: data.admin?.id,
+          email: data.admin?.email,
+          role: 'admin',
+        };
+        if (!adminUser.role) adminUser.role = 'admin';
+
         localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminInfo', JSON.stringify(data.admin));
-        setAdmin(data.admin);
+        localStorage.setItem('adminUser', JSON.stringify(adminUser));
+        if (data.admin) {
+          localStorage.setItem('adminInfo', JSON.stringify(data.admin));
+        }
+        setAdmin(data.admin || adminUser);
         setIsAuthenticated(true);
         return { success: true };
-      } else {
-        return { success: false, error: data.error || 'Email ou mot de passe incorrect' };
       }
+      return {
+        success: false,
+        error: data.error || data.message || 'Email ou mot de passe incorrect',
+      };
     } catch (error) {
       console.error('Erreur login:', error);
       return { success: false, error: 'Erreur de connexion au serveur' };
     }
   };
 
-  // Logout
   const logout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminInfo');
+    localStorage.removeItem('adminUser');
     setAdmin(null);
     setIsAuthenticated(false);
   };
 
-  // Vérifier le token
   const verifyToken = async () => {
     try {
       const token = localStorage.getItem('adminToken');
@@ -87,12 +99,7 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
 
-      const response = await fetch(apiPath('/admin/auth/verify'), {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
+      const response = await adminFetch('/admin/auth/verify');
       const data = await response.json();
       return data.success;
     } catch (error) {
@@ -101,17 +108,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Changer le mot de passe
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(apiPath('/admin/auth/change-password'), {
+      const response = await adminFetch('/admin/auth/change-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
 
       const data = await response.json();
@@ -129,12 +130,10 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     verifyToken,
-    changePassword
+    changePassword,
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
-}; 
+};

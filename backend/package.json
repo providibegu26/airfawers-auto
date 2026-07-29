@@ -9,6 +9,7 @@
     "start": "node server.js",
     "migrate:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
+    "create-admin": "node scripts/createAdmin.js",
     "create-test-chauffeur": "node scripts/createTestChauffeur.js"
   },
   "keywords": [],

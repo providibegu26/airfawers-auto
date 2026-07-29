@@ -9,9 +9,9 @@ import EmptyState from "../components/UI/EmptyState";
 import Modal from "../components/UI/Modal";
 import StatusBadge from "../components/UI/StatusBadge";
 import ToastNotification from "../components/UI/ToastNotification";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API = apiPath("/admin/entretiens");
+const API = "/admin/entretiens";
 
 const TYPE_LABELS = {
   vidange: "Catégorie A",
@@ -39,7 +39,7 @@ const HistoriqueEntretiens = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API}/history`);
+      const response = await adminFetch(`${API}/history`);
       const data = await response.json();
       if (response.ok) {
         setHistorique(data.historique || []);
@@ -66,7 +66,7 @@ const HistoriqueEntretiens = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const response = await fetch(`${API}/${deleteTarget}`, { method: "DELETE" });
+      const response = await adminFetch(`${API}/${deleteTarget}`, { method: "DELETE" });
       if (response.ok) {
         showToast("Entretien supprimé", "success");
         setDeleteTarget(null);
@@ -85,7 +85,7 @@ const HistoriqueEntretiens = () => {
   const handleClearAll = async () => {
     setDeleting(true);
     try {
-      const response = await fetch(`${API}/clear/all`, { method: "DELETE" });
+      const response = await adminFetch(`${API}/clear/all`, { method: "DELETE" });
       if (response.ok) {
         const data = await response.json();
         showToast(data.message || "Historique vidé", "success");

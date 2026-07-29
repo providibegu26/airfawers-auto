@@ -1,23 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const { 
-  loginAdmin, 
   loginChauffeur, 
   createChauffeurAccount, 
   getChauffeurProfile,
   personalizeChauffeurPassword,
 } = require('../controllers/authController');
-const { authenticateToken, requireChauffeur } = require('../middleware/auth');
+const { authenticateToken, requireChauffeur, requireAdmin } = require('../middleware/auth');
 const { listChauffeurPlannedMaintenances } = require('../controllers/planningController');
-
-// Route de connexion admin
-router.post('/admin/login', loginAdmin);
 
 // Route de connexion chauffeur
 router.post('/chauffeur/login', loginChauffeur);
 
-// Route pour créer un compte chauffeur (appelée depuis le modal d'ajout de chauffeur)
-router.post('/chauffeur/create', createChauffeurAccount);
+// Création compte chauffeur — admin uniquement
+router.post(
+  '/chauffeur/create',
+  authenticateToken,
+  requireAdmin,
+  createChauffeurAccount
+);
 
 // Route pour récupérer le profil du chauffeur connecté (protégée)
 router.get('/chauffeur/profile', authenticateToken, requireChauffeur, getChauffeurProfile);
@@ -38,4 +39,3 @@ router.post(
 );
 
 module.exports = router;
-

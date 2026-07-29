@@ -1,46 +1,25 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const { getJwtSecret } = require('../src/middleware/auth');
+const { sanitizeAdmin } = require('../src/utils/sanitizeAdmin');
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Middleware d'authentification
-const authenticateToken = async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Token d\'accès requis' 
-    });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const admin = await prisma.admin.findUnique({
-      where: { id: decoded.id }
-    });
-
-    if (!admin) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Admin non trouvé' 
-      });
-    }
-
-    req.admin = admin;
-    next();
-  } catch (error) {
-    return res.status(403).json({ 
-      success: false, 
-      error: 'Token invalide' 
-    });
-  }
+const ADMIN_SAFE_SELECT = {
+  id: true,
+  email: true,
+  nom: true,
+  prenom: true,
+  postNom: true,
+  telephone: true,
+  photo: true,
+  isFirstLogin: true,
+  createdAt: true,
+  updatedAt: true,
 };
 
-// Login admin
+// Login admin (BDD + bcrypt)
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -48,18 +27,20 @@ const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Email et mot de passe requis'
+        error: 'Email et mot de passe requis',
+        message: 'Email et mot de passe requis',
       });
     }
 
-    const admin = await prisma.admin.findUnique({
-      where: { email }
+    const admin = await prisma.admin.findFirst({
+      where: { email: { equals: String(email).trim(), mode: 'insensitive' } },
     });
 
     if (!admin) {
       return res.status(401).json({
         success: false,
-        error: 'Email ou mot de passe incorrect'
+        error: 'Email ou mot de passe incorrect',
+        message: 'Email ou mot de passe incorrect',
       });
     }
 
@@ -68,35 +49,38 @@ const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        error: 'Email ou mot de passe incorrect'
+        error: 'Email ou mot de passe incorrect',
+        message: 'Email ou mot de passe incorrect',
       });
     }
 
-    const token = jwt.sign(
-      { id: admin.id, email: admin.email },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const safeAdmin = sanitizeAdmin(admin);
+    const userPayload = {
+      id: admin.id,
+      email: admin.email,
+      role: 'admin',
+    };
+
+    const token = jwt.sign(userPayload, getJwtSecret(), { expiresIn: '24h' });
 
     res.json({
       success: true,
-      admin: {
-        id: admin.id,
-        email: admin.email,
+      message: 'Connexion admin réussie',
+      admin: safeAdmin,
+      user: {
+        ...userPayload,
         nom: admin.nom,
         prenom: admin.prenom,
-        postNom: admin.postNom,
-        telephone: admin.telephone,
-        photo: admin.photo,
-        isFirstLogin: admin.isFirstLogin
+        isFirstLogin: admin.isFirstLogin,
       },
-      token
+      token,
     });
   } catch (error) {
-    console.error('Erreur login:', error);
+    console.error('Erreur login admin:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de l\'authentification'
+      error: "Erreur lors de l'authentification",
+      message: "Erreur lors de l'authentification",
     });
   }
 };
@@ -104,15 +88,34 @@ const login = async (req, res) => {
 // Vérifier le token
 const verify = async (req, res) => {
   try {
+    const admin = await prisma.admin.findUnique({
+      where: { id: req.user.id },
+      select: ADMIN_SAFE_SELECT,
+    });
+
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin non trouvé',
+        message: 'Admin non trouvé',
+      });
+    }
+
     res.json({
       success: true,
-      admin: req.admin
+      admin,
+      user: {
+        id: admin.id,
+        email: admin.email,
+        role: 'admin',
+      },
     });
   } catch (error) {
     console.error('Erreur vérification:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la vérification'
+      error: 'Erreur lors de la vérification',
+      message: 'Erreur lors de la vérification',
     });
   }
 };
@@ -121,18 +124,38 @@ const verify = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
 
     const admin = await prisma.admin.findUnique({
-      where: { id: adminId }
+      where: { id: adminId },
     });
 
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin non trouvé',
+        message: 'Admin non trouvé',
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      admin.password
+    );
 
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
-        error: 'Mot de passe actuel incorrect'
+        error: 'Mot de passe actuel incorrect',
+        message: 'Mot de passe actuel incorrect',
+      });
+    }
+
+    if (!newPassword || String(newPassword).length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le nouveau mot de passe doit contenir au moins 8 caractères',
+        message: 'Le nouveau mot de passe doit contenir au moins 8 caractères',
       });
     }
 
@@ -140,21 +163,22 @@ const changePassword = async (req, res) => {
 
     await prisma.admin.update({
       where: { id: adminId },
-      data: { 
+      data: {
         password: hashedNewPassword,
-        isFirstLogin: false
-      }
+        isFirstLogin: false,
+      },
     });
 
     res.json({
       success: true,
-      message: 'Mot de passe modifié avec succès'
+      message: 'Mot de passe modifié avec succès',
     });
   } catch (error) {
     console.error('Erreur changement mot de passe:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors du changement de mot de passe'
+      error: 'Erreur lors du changement de mot de passe',
+      message: 'Erreur lors du changement de mot de passe',
     });
   }
 };
@@ -163,7 +187,7 @@ const changePassword = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { nom, prenom, postNom, telephone, email } = req.body;
-    const adminId = req.admin.id;
+    const adminId = req.user.id;
 
     const updatedAdmin = await prisma.admin.update({
       where: { id: adminId },
@@ -172,19 +196,21 @@ const updateProfile = async (req, res) => {
         prenom: prenom || undefined,
         postNom: postNom || undefined,
         telephone: telephone || undefined,
-        email: email || undefined
-      }
+        email: email || undefined,
+      },
+      select: ADMIN_SAFE_SELECT,
     });
 
     res.json({
       success: true,
-      admin: updatedAdmin
+      admin: updatedAdmin,
     });
   } catch (error) {
     console.error('Erreur mise à jour profil:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la mise à jour du profil'
+      error: 'Erreur lors de la mise à jour du profil',
+      message: 'Erreur lors de la mise à jour du profil',
     });
   }
 };
@@ -192,68 +218,16 @@ const updateProfile = async (req, res) => {
 // Logout
 const logout = async (req, res) => {
   try {
-    // Dans une implémentation plus avancée, on pourrait invalider le token
     res.json({
       success: true,
-      message: 'Déconnexion réussie'
+      message: 'Déconnexion réussie',
     });
   } catch (error) {
     console.error('Erreur logout:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur lors de la déconnexion'
-    });
-  }
-};
-
-// Créer un admin (pour l'initialisation)
-const createAdmin = async (req, res) => {
-  try {
-    const { email, password, nom, prenom, postNom, telephone } = req.body;
-
-    // Vérifier si l'admin existe déjà
-    const existingAdmin = await prisma.admin.findUnique({
-      where: { email }
-    });
-
-    if (existingAdmin) {
-      return res.status(400).json({
-        success: false,
-        error: 'Un admin avec cet email existe déjà'
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const admin = await prisma.admin.create({
-      data: {
-        email,
-        password: hashedPassword,
-        nom: nom || 'Admin',
-        prenom: prenom || 'Principal',
-        postNom: postNom || 'Airfawers',
-        telephone: telephone || '+243000000000',
-        isFirstLogin: true
-      }
-    });
-
-    res.json({
-      success: true,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        nom: admin.nom,
-        prenom: admin.prenom,
-        postNom: admin.postNom,
-        telephone: admin.telephone,
-        isFirstLogin: admin.isFirstLogin
-      }
-    });
-  } catch (error) {
-    console.error('Erreur création admin:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur lors de la création de l\'admin'
+      error: 'Erreur lors de la déconnexion',
+      message: 'Erreur lors de la déconnexion',
     });
   }
 };
@@ -264,6 +238,4 @@ module.exports = {
   changePassword,
   updateProfile,
   logout,
-  createAdmin,
-  authenticateToken
-}; 
+};

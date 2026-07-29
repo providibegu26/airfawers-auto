@@ -12,7 +12,7 @@ import {
   formatMaintenanceData,
   fetchVehicles,
 } from "../services/maintenanceService";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 const TYPE_MAPPING = {
   "Catégorie A": "vidange",
@@ -49,9 +49,8 @@ const EntretiensUrgents = () => {
       );
       if (!vehicle) throw new Error("Véhicule non trouvé");
 
-      const response = await fetch(apiPath("/admin/entretiens/validate"), {
+      const response = await adminFetch("/admin/entretiens/validate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vehiculeId: vehicle.id,
           type: pendingValidation.maintenanceType,

@@ -12,7 +12,7 @@ import Card from "../components/UI/Card";
 import SearchBar from "../components/common/SearchBar";
 import Pagination from "../components/common/Pagination";
 import { downloadCsv, downloadPdf } from "../utils/exportData";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 const EXPORT_HEADERS = [
   "Nom",
@@ -24,8 +24,8 @@ const EXPORT_HEADERS = [
   "Véhicule assigné",
 ];
 
-const API_CHAUFFEURS = apiPath("/admin/chauffeurs");
-const API_VEHICULES = apiPath("/admin/vehicules");
+const API_CHAUFFEURS = "/admin/chauffeurs";
+const API_VEHICULES = "/admin/vehicules";
 const ITEMS_PER_PAGE = 10;
 
 export const ChauffeursPage = () => {
@@ -44,8 +44,8 @@ export const ChauffeursPage = () => {
     setLoading(true);
     try {
       const [chRes, vRes] = await Promise.all([
-        fetch(API_CHAUFFEURS).then((r) => r.json()),
-        fetch(API_VEHICULES).then((r) => r.json()),
+        adminFetch(API_CHAUFFEURS).then((r) => r.json()),
+        adminFetch(API_VEHICULES).then((r) => r.json()),
       ]);
       setChauffeurs(chRes.chauffeurs || []);
       setVehicles(vRes.vehicules || []);
@@ -101,9 +101,8 @@ export const ChauffeursPage = () => {
 
   const handleSaveChauffeurUpdate = async (updatedChauffeur) => {
     try {
-      const response = await fetch(`${API_CHAUFFEURS}/${updatedChauffeur.id}`, {
+      const response = await adminFetch(`${API_CHAUFFEURS}/${updatedChauffeur.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nom: updatedChauffeur.nom,
           postnom: updatedChauffeur.postnom,
@@ -146,7 +145,7 @@ export const ChauffeursPage = () => {
 
   const handleDeleteChauffeur = async (id) => {
     try {
-      const response = await fetch(`${API_CHAUFFEURS}/${id}`, { method: "DELETE" });
+      const response = await adminFetch(`${API_CHAUFFEURS}/${id}`, { method: "DELETE" });
       if (response.ok) {
         setChauffeurs((prev) => prev.filter((c) => c.id !== id));
         setSuccessData({

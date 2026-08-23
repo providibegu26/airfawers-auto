@@ -6,9 +6,9 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 import { fetchPanneStats } from "../../services/panneService";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API = apiPath("/admin");
+const API = "/admin";
 
 const STAT_ITEMS = [
   { key: "chauffeurs", label: "Chauffeurs", icon: FaUserTie, iconClass: "bg-indigo-100 text-indigo-600" },
@@ -28,8 +28,8 @@ const StatsCards = () => {
       setLoading(true);
       try {
         const [chauffeursRes, vehiculesRes, panneStats] = await Promise.all([
-          fetch(`${API}/chauffeurs`).then((r) => r.json()),
-          fetch(`${API}/vehicules`).then((r) => r.json()),
+          adminFetch(`${API}/chauffeurs`).then((r) => r.json()),
+          adminFetch(`${API}/vehicules`).then((r) => r.json()),
           fetchPanneStats().catch(() => ({ actives: 0 })),
         ]);
 

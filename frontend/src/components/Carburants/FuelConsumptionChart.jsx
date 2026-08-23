@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 import ChartCard from "../UI/ChartCard";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 const COLORS = ["#6366f1", "#f97316", "#10b981"];
 
@@ -16,8 +16,8 @@ const FuelConsumptionChart = () => {
       setLoading(true);
       try {
         const [histRes, vehRes] = await Promise.all([
-          fetch(apiPath("/admin/carburant/historique/global")),
-          fetch(apiPath("/admin/vehicules")),
+          adminFetch("/admin/carburant/historique/global"),
+          adminFetch("/admin/vehicules"),
         ]);
         const histData = await histRes.json();
         const vehData = await vehRes.json();

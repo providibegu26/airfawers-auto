@@ -7,7 +7,8 @@ const authChauffeurRoutes = require('./routes/authChauffeurRoutes');
 const vehiculeRoutes = require('./routes/vehiculeRoutes');
 const entretienRoutes = require('./routes/entretienRoutes');
 const chauffeurRoutes = require('../routes/chauffeurRoutes');
-const carburantRoutes = require('./routes/carburantRoutes');
+const { adminCarburantRoutes, chauffeurCarburantRoutes } = require('./routes/carburantRoutes');
+const { authenticateToken, requireAdmin } = require('./middleware/auth');
 
 const app = express();
 
@@ -35,13 +36,13 @@ app.get('/api/test', (req, res) => {
 
 // Routes
 
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', authenticateToken, requireAdmin, adminRoutes);
 app.use('/api/auth-chauffeur', authChauffeurRoutes);
-app.use('/api/admin/vehicules', vehiculeRoutes);
-app.use('/api/admin/entretiens', entretienRoutes);
-app.use('/api/chauffeurs', chauffeurRoutes);
-app.use('/api/admin/carburant', carburantRoutes);
-app.use('/api/chauffeur/carburant', carburantRoutes);
+app.use('/api/admin/vehicules', authenticateToken, requireAdmin, vehiculeRoutes);
+app.use('/api/admin/entretiens', authenticateToken, requireAdmin, entretienRoutes);
+app.use('/api/chauffeurs', authenticateToken, requireAdmin, chauffeurRoutes);
+app.use('/api/admin/carburant', authenticateToken, requireAdmin, adminCarburantRoutes);
+app.use('/api/chauffeur/carburant', chauffeurCarburantRoutes);
 
 const PORT = process.env.PORT || 4000;
 

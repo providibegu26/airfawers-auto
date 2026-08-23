@@ -1,4 +1,5 @@
 import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 export const PLANNING_WINDOW_MAX_DAYS = 14;
 export const DATE_TOLERANCE_DAYS = 5;
@@ -21,7 +22,7 @@ export const maintenanceThresholds = {
 export const fetchVehicles = async () => {
   try {
     console.log('🔄 Récupération des véhicules depuis le serveur...');
-    const response = await fetch(apiPath("/admin/vehicules"));
+    const response = await adminFetch("/admin/vehicules");
     const data = await response.json();
     
     console.log('📊 Données reçues du serveur:', data.vehicules?.length || 0, 'véhicules');
@@ -186,9 +187,8 @@ export const getNonUrgentMaintenance = (vehicles, type) => {
 // Mettre à jour le kilométrage d'un véhicule
 export const updateVehicleMileage = async (vehiclePlate, newMileage) => {
   try {
-    const response = await fetch(apiPath(`/admin/vehicules/${vehiclePlate}/mileage`), {
+    const response = await adminFetch(`/admin/vehicules/${vehiclePlate}/mileage`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newMileage })
     });
 
@@ -208,9 +208,8 @@ export const validateMaintenance = async (vehicle, maintenanceType) => {
   try {
     const currentMileage = vehicle.currentMileage || vehicle.kilometrage || 0;
     
-    const response = await fetch(apiPath("/admin/entretiens/validate"), {
+    const response = await adminFetch("/admin/entretiens/validate", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         vehiculeId: vehicle.id,
         type: maintenanceType,
@@ -505,7 +504,7 @@ export function getMaintenanceToSchedule(vehicles, activePlans = []) {
 }
 
 export async function fetchPlannedMaintenances(statut = 'planifie') {
-  const response = await fetch(apiPath(`/admin/entretiens/planifies?statut=${statut}`));
+  const response = await adminFetch(`/admin/entretiens/planifies?statut=${statut}`);
   if (!response.ok) throw new Error('Erreur lors du chargement des planifications');
   const data = await response.json();
   return data.planifies || [];
@@ -513,15 +512,14 @@ export async function fetchPlannedMaintenances(statut = 'planifie') {
 
 export async function fetchSchedulingCandidates(date) {
   const params = date ? `?date=${date}` : '';
-  const response = await fetch(apiPath(`/admin/entretiens/planifier/candidates${params}`));
+  const response = await adminFetch(`/admin/entretiens/planifier/candidates${params}`);
   if (!response.ok) throw new Error('Erreur lors du chargement des candidats');
   return response.json();
 }
 
 export async function planMaintenances(datePrevue, items) {
-  const response = await fetch(apiPath('/admin/entretiens/planifier'), {
+  const response = await adminFetch('/admin/entretiens/planifier', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ datePrevue, items }),
   });
 
@@ -533,7 +531,7 @@ export async function planMaintenances(datePrevue, items) {
 }
 
 export async function cancelPlannedMaintenance(id) {
-  const response = await fetch(apiPath(`/admin/entretiens/planifier/${id}`), {
+  const response = await adminFetch(`/admin/entretiens/planifier/${id}`, {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error('Erreur lors de l\'annulation');

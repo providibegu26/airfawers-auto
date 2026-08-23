@@ -6,9 +6,9 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 import { fetchPanneStats } from "../../services/panneService";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API = apiPath("/admin");
+const API = "/admin";
 
 const STAT_ITEMS = [
   { key: "vehicules", label: "Véhicules", icon: FaCar, iconClass: "bg-indigo-100 text-indigo-600" },
@@ -33,10 +33,10 @@ const StatsCards = () => {
       setLoading(true);
       try {
         const [vehRes, chRes, panneStats, rapportsRes] = await Promise.all([
-          fetch(`${API}/vehicules`).then((r) => r.json()),
-          fetch(`${API}/chauffeurs`).then((r) => r.json()),
+          adminFetch(`${API}/vehicules`).then((r) => r.json()),
+          adminFetch(`${API}/chauffeurs`).then((r) => r.json()),
           fetchPanneStats().catch(() => ({ actives: 0 })),
-          fetch(`${API}/carburant/rapports?periode=monthly`).then((r) => r.json()).catch(() => ({})),
+          adminFetch(`${API}/carburant/rapports?periode=monthly`).then((r) => r.json()).catch(() => ({})),
         ]);
 
         if (cancelled) return;

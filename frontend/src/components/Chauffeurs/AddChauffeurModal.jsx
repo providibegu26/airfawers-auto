@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
-import { FaUserTie, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaUserTie } from "react-icons/fa";
 import Modal from "../UI/Modal";
 import Button from "../UI/Button";
 import ConfirmationModal from "../UI/ConfirmationModal";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm";
@@ -29,7 +29,6 @@ export const AddChauffeurModal = ({ onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
-  const [showCredentials, setShowCredentials] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -39,9 +38,8 @@ export const AddChauffeurModal = ({ onClose, onSave }) => {
     setSuccess(null);
 
     try {
-      const response = await fetch(apiPath("/auth/chauffeur/create"), {
+      const response = await adminFetch("/auth/chauffeur/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
           email: form.email.trim().toLowerCase(),
@@ -54,14 +52,18 @@ export const AddChauffeurModal = ({ onClose, onSave }) => {
         setSuccess({
           message: data.message,
           emailSent: data.emailSent !== false,
-          credentials: data.credentials,
+          email: data.chauffeur?.email || form.email,
         });
-        setShowCredentials(true);
         if (onSave) {
           onSave(data.chauffeur);
         }
       } else {
-        setError(data.message || "Erreur lors de la création du chauffeur");
+        setError(
+          data.message ||
+            (response.status === 401
+              ? "Session admin expirée — reconnectez-vous."
+              : "Erreur lors de la création du chauffeur")
+        );
       }
     } catch {
       setError(
@@ -180,48 +182,15 @@ export const AddChauffeurModal = ({ onClose, onSave }) => {
               {success.message}
             </div>
 
-            <div className="rounded-lg bg-slate-50 p-3">
-              <h4 className="mb-2 text-sm font-medium text-slate-900">
-                Identifiants :
-              </h4>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs font-medium text-slate-700">
-                    Email :
-                  </span>
-                  <span className="ml-2 text-xs text-slate-900">
-                    {success.credentials.email}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-xs font-medium text-slate-700">
-                    Mot de passe :
-                  </span>
-                  <div className="mt-1 flex items-center">
-                    <span className="font-mono text-xs text-slate-900">
-                      {showCredentials
-                        ? success.credentials.password
-                        : "••••••••"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowCredentials(!showCredentials)}
-                      className="ml-2 text-slate-500 hover:text-slate-700"
-                    >
-                      {showCredentials ? (
-                        <FaEyeSlash size={12} />
-                      ) : (
-                        <FaEye size={12} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 rounded bg-orange-50 p-2 text-xs text-orange-600">
+            <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
+              <p>
+                Compte : <span className="font-medium">{success.email}</span>
+              </p>
+              <p className="mt-2">
                 {success.emailSent
-                  ? "Un email a été envoyé au chauffeur. Conservez aussi ces identifiants."
-                  : "Communiquez ces identifiants au chauffeur manuellement."}
-              </div>
+                  ? "Le mot de passe temporaire a été envoyé uniquement par email au chauffeur."
+                  : "L'email n'a pas pu être envoyé. Réessayez plus tard ou utilisez la réinitialisation de mot de passe — le mot de passe n'est plus affiché ici pour des raisons de sécurité."}
+              </p>
             </div>
           </div>
         )}

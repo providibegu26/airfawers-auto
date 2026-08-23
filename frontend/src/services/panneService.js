@@ -1,6 +1,7 @@
 import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-function getAuthHeaders() {
+function getChauffeurAuthHeaders() {
   const token = localStorage.getItem("chauffeurToken");
   if (!token) throw new Error("Session expirée. Veuillez vous reconnecter.");
   return {
@@ -20,7 +21,7 @@ export async function fetchPanneMeta() {
 
 export async function fetchChauffeurProfile() {
   const response = await fetch(apiPath("/auth/chauffeur/profile"), {
-    headers: getAuthHeaders(),
+    headers: getChauffeurAuthHeaders(),
   });
   const data = await response.json();
   if (!response.ok || !data.success) {
@@ -39,7 +40,7 @@ export async function reportPanne({
 }) {
   const response = await fetch(apiPath("/chauffeur/pannes"), {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: getChauffeurAuthHeaders(),
     body: JSON.stringify({
       type,
       description,
@@ -58,7 +59,7 @@ export async function reportPanne({
 
 export async function fetchChauffeurPannes() {
   const response = await fetch(apiPath("/chauffeur/pannes"), {
-    headers: getAuthHeaders(),
+    headers: getChauffeurAuthHeaders(),
   });
   const data = await response.json();
   if (!response.ok || !data.success) {
@@ -71,9 +72,9 @@ export async function fetchChauffeurPannes() {
 
 export async function fetchAllPannes(statut) {
   const url = statut
-    ? `${apiPath("/admin/pannes")}?statut=${encodeURIComponent(statut)}`
-    : apiPath("/admin/pannes");
-  const response = await fetch(url);
+    ? `/admin/pannes?statut=${encodeURIComponent(statut)}`
+    : "/admin/pannes";
+  const response = await adminFetch(url);
   const data = await response.json();
   if (!response.ok || !data.success) {
     throw new Error(data.error || "Erreur lors du chargement des pannes");
@@ -82,7 +83,7 @@ export async function fetchAllPannes(statut) {
 }
 
 export async function fetchPanneStats() {
-  const response = await fetch(apiPath("/admin/pannes/stats"));
+  const response = await adminFetch("/admin/pannes/stats");
   const data = await response.json();
   if (!response.ok || !data.success) {
     throw new Error(data.error || "Erreur lors du chargement des statistiques");
@@ -91,7 +92,7 @@ export async function fetchPanneStats() {
 }
 
 export async function fetchPannesMap() {
-  const response = await fetch(apiPath("/admin/pannes/map"));
+  const response = await adminFetch("/admin/pannes/map");
   const data = await response.json();
   if (!response.ok || !data.success) {
     throw new Error(data.error || "Erreur lors du chargement de la carte");
@@ -100,9 +101,8 @@ export async function fetchPannesMap() {
 }
 
 export async function updatePanneStatut(id, statut, notesAdmin) {
-  const response = await fetch(apiPath(`/admin/pannes/${id}`), {
+  const response = await adminFetch(`/admin/pannes/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ statut, notesAdmin }),
   });
   const data = await response.json();

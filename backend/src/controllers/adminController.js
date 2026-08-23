@@ -4,18 +4,25 @@ const { createChauffeurService } = require('../services/chauffeurService');
 async function createChauffeur(req, res) {
   try {
     const { nom, postnom, prenom, sexe, telephone, email } = req.body;
-    
-    // Validation des champs requis
+
     if (!nom || !postnom || !prenom || !sexe || !telephone || !email) {
-      return res.status(400).json({ 
-        error: 'Les champs nom, post-nom, prénom, sexe, téléphone et email sont obligatoires' 
+      return res.status(400).json({
+        error: 'Les champs nom, post-nom, prénom, sexe, téléphone et email sont obligatoires',
       });
     }
-    
-    const user = await createChauffeurService({ nom, postnom, prenom, sexe, telephone, email });
-    
-    res.status(201).json({ 
-      message: 'Chauffeur créé avec succès', 
+
+    const user = await createChauffeurService({
+      nom,
+      postnom,
+      prenom,
+      sexe,
+      telephone,
+      email,
+    });
+
+    res.status(201).json({
+      message: 'Chauffeur créé avec succès',
+      emailSent: false,
       user: {
         id: user.chauffeur.id,
         nom: user.chauffeur.nom,
@@ -24,8 +31,7 @@ async function createChauffeur(req, res) {
         sexe: user.chauffeur.sexe,
         telephone: user.chauffeur.telephone,
         email: user.email,
-        motDePasseTemporaire: user.motDePasseTemporaire
-      }
+      },
     });
   } catch (error) {
     res.status(400).json({ error: error.message });

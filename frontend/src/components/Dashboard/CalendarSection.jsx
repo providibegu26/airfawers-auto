@@ -16,9 +16,9 @@ import Modal from "../UI/Modal";
 import ModalCard from "../UI/ModalCard";
 import StatusBadge from "../UI/StatusBadge";
 import { generateCalendarData } from "../../services/maintenanceService";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API = apiPath("/admin/vehicules");
+const API = "/admin/vehicules";
 
 const MONTH_NAMES = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -49,7 +49,7 @@ const CalendarSection = () => {
   useEffect(() => {
     const loadVehicles = async () => {
       try {
-        const response = await fetch(API);
+        const response = await adminFetch(API);
         const data = await response.json();
         setVehicles(data.vehicules || []);
       } catch {

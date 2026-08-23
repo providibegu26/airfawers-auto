@@ -1,6 +1,6 @@
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
-const API = apiPath("/admin");
+const API = "/admin";
 const USD_RATE = 2850;
 
 const FUEL_COEF = {
@@ -36,19 +36,19 @@ export const formatMonthLabel = (key) => {
 };
 
 const fetchVehicles = async () => {
-  const res = await fetch(`${API}/vehicules`);
+  const res = await adminFetch(`${API}/vehicules`);
   const data = await res.json();
   return data.vehicules || [];
 };
 
 const fetchFuelHistorique = async () => {
-  const res = await fetch(`${API}/carburant/historique/global`);
+  const res = await adminFetch(`${API}/carburant/historique/global`);
   const data = await res.json();
   return data.attributions || [];
 };
 
 const fetchFuelRapportMonthly = async () => {
-  const res = await fetch(`${API}/carburant/rapports?periode=monthly`);
+  const res = await adminFetch(`${API}/carburant/rapports?periode=monthly`);
   const data = await res.json();
   return data.aggreg || {};
 };

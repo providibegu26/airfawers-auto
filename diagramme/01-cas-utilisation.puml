@@ -1,0 +1,243 @@
+@startuml 01-cas-utilisation
+' ============================================================
+' Airfawers Auto — Diagramme de cas d'utilisation (global)
+' Acteurs : Administrateur, Chauffeur (représentation bonhomme)
+' ============================================================
+
+top to bottom direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #374151
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #1E40AF
+}
+skinparam rectangle {
+  BorderColor #1E40AF
+  FontSize 13
+  FontStyle bold
+}
+
+' --- Acteurs humains (icône bonhomme par défaut PlantUML) ---
+actor "Administrateur" as admin
+actor "Chauffeur" as chauffeur
+
+rectangle "Airfawers Auto — Gestion de flotte" as system {
+
+  ' ==========================================================
+  package "Authentification et sécurité" as pkg_auth {
+    usecase "Se connecter à l'espace\nadministrateur" as UC_A01
+    usecase "Se connecter à l'espace\nchauffeur" as UC_C01
+    usecase "Personnaliser le mot de passe\n(première connexion)" as UC_C02
+    usecase "Demander un code de\nréinitialisation (email)" as UC_C03
+    usecase "Confirmer le nouveau mot de\nde passe via code email" as UC_C04
+    usecase "Se déconnecter" as UC_LOGOUT
+  }
+
+  ' ==========================================================
+  package "Gestion des véhicules" as pkg_veh {
+    usecase "Consulter la liste\ndes véhicules" as UC_A10
+    usecase "Ajouter un nouveau véhicule\n(marque, modèle, immatriculation…)" as UC_A11
+    usecase "Modifier les informations\nd'un véhicule" as UC_A12
+    usecase "Supprimer un véhicule" as UC_A13
+    usecase "Attribuer un chauffeur\nà un véhicule" as UC_A14
+    usecase "Retirer l'attribution\nd'un chauffeur" as UC_A15
+    usecase "Mettre à jour le kilométrage\nd'un véhicule (admin)" as UC_A16
+    usecase "Exporter la liste des véhicules\n(PDF / CSV)" as UC_A17
+    usecase "Consulter son véhicule\nattribué" as UC_C10
+  }
+
+  ' ==========================================================
+  package "Gestion des chauffeurs" as pkg_chauff {
+    usecase "Consulter la liste\ndes chauffeurs" as UC_A20
+    usecase "Créer un compte chauffeur\n(envoi identifiants par email)" as UC_A21
+    usecase "Modifier les informations\nd'un chauffeur" as UC_A22
+    usecase "Supprimer un chauffeur" as UC_A23
+    usecase "Exporter la liste des chauffeurs\n(PDF / CSV)" as UC_A24
+  }
+
+  ' ==========================================================
+  package "Entretiens et maintenance" as pkg_maint {
+    usecase "Consulter les estimations\nd'entretien (jours restants)" as UC_A30
+    usecase "Consulter les entretiens\npar catégorie (A / B / C)" as UC_A31
+    usecase "Consulter les entretiens\nurgents (≤ 7 jours)" as UC_A32
+    usecase "Consulter les véhicules\nà planifier (≤ 14 jours)" as UC_A33
+    usecase "Planifier une date d'entretien\nsur le calendrier" as UC_A34
+    usecase "Annuler une planification\nd'entretien" as UC_A35
+    usecase "Valider un entretien effectué\n(enregistrer en historique)" as UC_A36
+    usecase "Consulter l'historique\ndes entretiens" as UC_A37
+    usecase "Supprimer un enregistrement\nd'historique d'entretien" as UC_A38
+    usecase "Consulter le calendrier\nde maintenance" as UC_A39
+    usecase "Consulter les entretiens\nprévus (estimations km)" as UC_C20
+    usecase "Consulter le calendrier\ndes entretiens planifiés" as UC_C21
+    usecase "Consulter l'entretien\nle plus proche" as UC_C22
+  }
+
+  ' ==========================================================
+  package "Carburant" as pkg_fuel {
+    usecase "Consulter l'estimation hebdomadaire\nde carburant par véhicule" as UC_A40
+    usecase "Attribuer du carburant\nà un véhicule" as UC_A41
+    usecase "Consulter l'historique global\ndes attributions" as UC_A42
+    usecase "Consulter l'historique carburant\nd'un véhicule" as UC_A43
+    usecase "Consulter les rapports\nde consommation" as UC_A44
+    usecase "Consulter les attributions\nde carburant en attente" as UC_C30
+    usecase "Confirmer la récupération\nde carburant" as UC_C31
+  }
+
+  ' ==========================================================
+  package "Pannes et incidents" as pkg_panne {
+    usecase "Consulter la liste\ndes pannes signalées" as UC_A50
+    usecase "Filtrer les pannes\npar statut" as UC_A51
+    usecase "Consulter les pannes actives\nsur la carte" as UC_A52
+    usecase "Mettre à jour le statut\nd'une panne" as UC_A53
+    usecase "Ajouter des notes\nadministrateur à une panne" as UC_A54
+    usecase "Consulter les statistiques\ndes pannes" as UC_A55
+    usecase "Signaler une panne\n(type, gravité, description)" as UC_C40
+    usecase "Localiser la panne\nsur la carte (GPS)" as UC_C41
+    usecase "Consulter l'historique\nde ses pannes signalées" as UC_C42
+  }
+
+  ' ==========================================================
+  package "Kilométrage hebdomadaire" as pkg_km {
+    usecase "Ouvrir la fenêtre de saisie\nkilométrique hebdomadaire" as UC_A60
+    usecase "Fermer la fenêtre de saisie\nkilométrique hebdomadaire" as UC_A61
+    usecase "Consulter l'avancement\ndes saisies chauffeurs" as UC_A62
+    usecase "Consulter le statut de la\nfenêtre de saisie" as UC_C50
+    usecase "Saisir le kilométrage\nhebdomadaire du véhicule" as UC_C51
+  }
+
+  ' ==========================================================
+  package "Tableaux de bord et rapports" as pkg_dash {
+    usecase "Consulter le tableau de bord\n(KPIs flotte)" as UC_A70
+    usecase "Consulter les statistiques\ndétaillées (km, carburant…)" as UC_A71
+    usecase "Consulter la carte\nde la flotte" as UC_A72
+    usecase "Consulter le tableau de bord\nchauffeur" as UC_C60
+  }
+
+  ' ==========================================================
+  package "Notifications et profil" as pkg_notif {
+    usecase "Consulter les notifications\nadministrateur" as UC_A80
+    usecase "Marquer une notification\ncomme lue" as UC_A81
+    usecase "Marquer toutes les notifications\ncomme lues" as UC_A82
+    usecase "Consulter le profil\nadministrateur" as UC_A83
+    usecase "Consulter ses notifications" as UC_C70
+    usecase "Marquer une notification\ncomme lue" as UC_C71
+    usecase "Modifier sa photo\nde profil" as UC_C72
+    usecase "Changer son mot de passe" as UC_C73
+  }
+}
+
+' ==========================================================
+' Relations Administrateur
+' ==========================================================
+admin --> UC_A01
+admin --> UC_LOGOUT
+admin --> UC_A10
+admin --> UC_A11
+admin --> UC_A12
+admin --> UC_A13
+admin --> UC_A14
+admin --> UC_A15
+admin --> UC_A16
+admin --> UC_A17
+admin --> UC_A20
+admin --> UC_A21
+admin --> UC_A22
+admin --> UC_A23
+admin --> UC_A24
+admin --> UC_A30
+admin --> UC_A31
+admin --> UC_A32
+admin --> UC_A33
+admin --> UC_A34
+admin --> UC_A35
+admin --> UC_A36
+admin --> UC_A37
+admin --> UC_A38
+admin --> UC_A39
+admin --> UC_A40
+admin --> UC_A41
+admin --> UC_A42
+admin --> UC_A43
+admin --> UC_A44
+admin --> UC_A50
+admin --> UC_A51
+admin --> UC_A52
+admin --> UC_A53
+admin --> UC_A54
+admin --> UC_A55
+admin --> UC_A60
+admin --> UC_A61
+admin --> UC_A62
+admin --> UC_A70
+admin --> UC_A71
+admin --> UC_A72
+admin --> UC_A80
+admin --> UC_A81
+admin --> UC_A82
+admin --> UC_A83
+
+' ==========================================================
+' Relations Chauffeur
+' ==========================================================
+chauffeur --> UC_C01
+chauffeur --> UC_C02
+chauffeur --> UC_C03
+chauffeur --> UC_C04
+chauffeur --> UC_LOGOUT
+chauffeur --> UC_C10
+chauffeur --> UC_C20
+chauffeur --> UC_C21
+chauffeur --> UC_C22
+chauffeur --> UC_C30
+chauffeur --> UC_C31
+chauffeur --> UC_C40
+chauffeur --> UC_C41
+chauffeur --> UC_C42
+chauffeur --> UC_C50
+chauffeur --> UC_C51
+chauffeur --> UC_C60
+chauffeur --> UC_C70
+chauffeur --> UC_C71
+chauffeur --> UC_C72
+chauffeur --> UC_C73
+
+' ==========================================================
+' Relations include (dépendances fonctionnelles clés)
+' ==========================================================
+UC_A34 ..> UC_A30 : <<include>>
+UC_A34 ..> UC_A39 : <<include>>
+UC_A36 ..> UC_A30 : <<include>>
+UC_A41 ..> UC_A40 : <<include>>
+UC_A14 ..> UC_A20 : <<include>>
+UC_A14 ..> UC_A10 : <<include>>
+UC_C51 ..> UC_C50 : <<include>>
+UC_C40 ..> UC_C41 : <<include>>
+UC_C31 ..> UC_C30 : <<include>>
+UC_A21 ..> UC_A20 : <<include>>
+
+' ==========================================================
+' Relations extend (optionnel / conditionnel)
+' ==========================================================
+UC_C02 ..> UC_C01 : <<extend>>
+UC_C04 ..> UC_C03 : <<extend>>
+
+note right of admin
+  Responsable de la flotte :
+  véhicules, entretiens,
+  carburant, pannes, km.
+end note
+
+note left of chauffeur
+  Conducteur assigné
+  à un véhicule :
+  saisie km, pannes,
+  carburant, calendrier.
+end note
+
+@enduml

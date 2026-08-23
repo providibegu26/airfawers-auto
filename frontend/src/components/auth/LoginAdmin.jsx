@@ -16,7 +16,7 @@ const LoginAdmin = () => {
     setError("");
 
     try {
-      const response = await fetch(apiPath("/auth/admin/login"), {
+      const response = await fetch(apiPath("/admin/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -24,12 +24,24 @@ const LoginAdmin = () => {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.token) {
+        const adminUser = data.user || {
+          id: data.admin?.id,
+          email: data.admin?.email,
+          role: "admin",
+        };
+        if (!adminUser.role) {
+          adminUser.role = "admin";
+        }
+
         localStorage.setItem("adminToken", data.token);
-        localStorage.setItem("adminUser", JSON.stringify(data.user));
+        localStorage.setItem("adminUser", JSON.stringify(adminUser));
+        if (data.admin) {
+          localStorage.setItem("adminInfo", JSON.stringify(data.admin));
+        }
         navigate("/admin");
       } else {
-        setError(data.message || "Erreur de connexion");
+        setError(data.message || data.error || "Erreur de connexion");
         setLoading(false);
       }
     } catch (err) {
@@ -46,7 +58,7 @@ const LoginAdmin = () => {
       role="admin"
       title="Connexion administrateur"
       subtitle="Accédez à votre espace de gestion de flotte."
-      emailPlaceholder="airfawersauto@gmail.com"
+      emailPlaceholder="admin@exemple.com"
       email={email}
       password={password}
       setEmail={setEmail}

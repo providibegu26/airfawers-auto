@@ -10,7 +10,7 @@ import Card from "../components/UI/Card";
 import SearchBar from "../components/common/SearchBar";
 import Pagination from "../components/common/Pagination";
 import { downloadCsv, downloadPdf } from "../utils/exportData";
-import { apiPath } from "@/config/api";
+import { adminFetch } from "@/config/adminApi";
 
 const EXPORT_HEADERS = [
   "Immatriculation",
@@ -22,7 +22,7 @@ const EXPORT_HEADERS = [
   "Statut",
 ];
 
-const API = apiPath("/admin/vehicules");
+const API = "/admin/vehicules";
 const ITEMS_PER_PAGE = 10;
 
 export const VehiclesPage = () => {
@@ -41,7 +41,7 @@ export const VehiclesPage = () => {
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API);
+      const res = await adminFetch(API);
       const data = await res.json();
       if (res.ok) setVehicles(data.vehicules || []);
     } finally {
@@ -100,9 +100,8 @@ export const VehiclesPage = () => {
 
   const handleAddVehicle = async (vehicleData) => {
     try {
-      const response = await fetch(API, {
+      const response = await adminFetch(API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(vehicleData),
       });
       const data = await response.json();
@@ -135,9 +134,8 @@ export const VehiclesPage = () => {
 
   const handleUpdateVehicle = async (id, vehicleData) => {
     try {
-      const response = await fetch(`${API}/${id}`, {
+      const response = await adminFetch(`${API}/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(vehicleData),
       });
       const data = await response.json();
@@ -168,9 +166,8 @@ export const VehiclesPage = () => {
   };
 
   const handleAssignDriver = async (vehicleId, driverId) => {
-    const response = await fetch(`${API}/${vehicleId}/assign-driver`, {
+    const response = await adminFetch(`${API}/${vehicleId}/assign-driver`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chauffeurId: Number(driverId) }),
     });
     const data = await response.json();
@@ -194,7 +191,7 @@ export const VehiclesPage = () => {
 
   const handleDeleteVehicle = async (id) => {
     try {
-      const response = await fetch(`${API}/${id}`, { method: "DELETE" });
+      const response = await adminFetch(`${API}/${id}`, { method: "DELETE" });
       if (response.ok) {
         setVehicles((prev) => prev.filter((v) => v.id !== id));
         setSuccessModal({

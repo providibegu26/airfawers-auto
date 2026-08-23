@@ -6,41 +6,33 @@ const { buildChauffeurWelcomeEmailHtml, buildChauffeurWelcomeEmailText } = requi
 const { normalizeEmail } = require('../utils/normalizeCredentials');
 const prisma = new PrismaClient();
 
-// Créer un nouveau chauffeur (version corrigée selon le schéma Prisma)
+// Créer un nouveau chauffeur (mot de passe uniquement par email)
 async function createChauffeur(req, res) {
   try {
-    console.log(' Création chauffeur - Données reçues:', req.body);
-    
     const { nom, postnom, prenom, telephone, sexe } = req.body;
     const email = normalizeEmail(req.body.email);
-    
-    // Validation des données selon le schéma Prisma
+
     if (!nom || !postnom || !prenom || !email || !telephone || !sexe) {
       return res.status(400).json({
         success: false,
         message: 'Tous les champs sont obligatoires (nom, postnom, prenom, email, telephone, sexe)'
       });
     }
-    
-    // Vérifier si l'email existe déjà
+
     const existingUser = await prisma.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
     });
-    
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'Un compte avec cet email existe déjà'
       });
     }
-    
-    // Générer un mot de passe aléatoire
+
     const password = crypto.randomBytes(6).toString('hex');
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    console.log(' Mot de passe généré:', password);
-    
-    // Créer l'utilisateur et le chauffeur selon le schéma Prisma
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -51,12 +43,12 @@ async function createChauffeur(req, res) {
         chauffeur: {
           create: {
             nom,
-            postnom, // Champ obligatoire selon le schéma
+            postnom,
             prenom,
             telephone,
             sexe,
-            statut: 'Non attribué', // Valeur par défaut
-            dateEmbauche: new Date() // Valeur par défaut
+            statut: 'Non attribué',
+            dateEmbauche: new Date()
           }
         }
       },
@@ -64,33 +56,29 @@ async function createChauffeur(req, res) {
         chauffeur: true
       }
     });
-    
-    console.log(' Chauffeur créé avec succès:', user.chauffeur.id);
-    
-    // Envoyer l'email avec les identifiants
+
     const mailOptions = {
       to: email,
       subject: 'Vos identifiants de connexion - Airfawers Auto',
       html: buildChauffeurWelcomeEmailHtml({ prenom, nom, email, password }),
       text: buildChauffeurWelcomeEmailText({ prenom, nom, email, password }),
     };
-    
+
     let emailSent = false;
     let emailError = null;
     try {
       await sendMail(mailOptions);
       emailSent = true;
-      console.log(' Email envoyé avec succès à:', email);
     } catch (err) {
       emailError = err.message;
-      console.error(' Erreur envoi email:', err);
+      console.error('Erreur envoi email création chauffeur:', err.message);
     }
 
     res.status(201).json({
       success: true,
       message: emailSent
         ? 'Chauffeur créé avec succès. Les identifiants ont été envoyés par email.'
-        : 'Chauffeur créé. L\'email n\'a pas pu être envoyé — communiquez les identifiants manuellement.',
+        : 'Chauffeur créé. L\'email n\'a pas pu être envoyé — réessayez l\'envoi ou réinitialisez le mot de passe.',
       emailSent,
       emailError: emailSent ? undefined : emailError,
       chauffeur: {
@@ -102,15 +90,11 @@ async function createChauffeur(req, res) {
         telephone: user.chauffeur.telephone,
         sexe: user.chauffeur.sexe,
         statut: user.chauffeur.statut
-      },
-      credentials: {
-        email: user.email,
-        password: password
       }
     });
-    
+
   } catch (error) {
-    console.error(' Erreur création chauffeur:', error);
+    console.error('Erreur création chauffeur:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création du chauffeur',
